@@ -26,11 +26,24 @@ Open http://localhost:3000.
 
 ## Environment variables
 
-Create a `.env.local` (see `.env.example` once added). Expected keys:
+Copy `.env.example` to `.env.local` and fill in:
 
-- `ANTHROPIC_API_KEY` — Claude API key, required for the analysis pipeline (added in a later ticket).
+- `DATABASE_URL` — Postgres connection string used by the idea capture flow.
+  In Vercel production, add the Neon integration (Storage → Create database →
+  Neon Postgres) and the platform injects `POSTGRES_URL` automatically; the
+  app reads `DATABASE_URL` first, then falls back to `POSTGRES_URL`.
+- `ANTHROPIC_API_KEY` — Claude API key, required for the analysis pipeline
+  (wired up in a later ticket).
+
+The `ideas` table is created on first request — no manual migration step.
+
+## Routes
+
+- `/` — paste an idea, hit submit.
+- `/ideas/<id>` — shareable URL showing the idea's processing status. The
+  status flips from `processing` → `ready` once the analysis pipeline lands.
 
 ## Deploy
 
-Push to `main` and Vercel auto-deploys. Initial Vercel project setup is
-tracked separately — see follow-up issue.
+Push to `main` and Vercel auto-deploys. Production needs `DATABASE_URL` (or
+the Vercel Neon integration) configured before the form will work.

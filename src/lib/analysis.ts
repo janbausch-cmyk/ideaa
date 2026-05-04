@@ -13,7 +13,7 @@ import {
 
 const ANALYSIS_MODEL = "claude-opus-4-7";
 const MAX_TOKENS = 3000;
-const MAX_SEARCHES = 5;
+const MAX_SEARCHES = 8;
 
 let cachedClient: Anthropic | null = null;
 

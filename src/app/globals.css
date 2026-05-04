@@ -24,3 +24,87 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.analysis-report {
+  line-height: 1.6;
+  color: var(--foreground);
+}
+.analysis-report h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 1.5rem 0 0.75rem;
+}
+.analysis-report h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 1.25rem 0 0.5rem;
+  border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  padding-top: 0.75rem;
+}
+.analysis-report h2:first-child {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+.analysis-report h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 1rem 0 0.4rem;
+}
+.analysis-report p {
+  margin: 0.5rem 0;
+}
+.analysis-report ul,
+.analysis-report ol {
+  margin: 0.5rem 0 0.5rem 1.4rem;
+  padding-left: 0.25rem;
+}
+.analysis-report ul {
+  list-style: disc;
+}
+.analysis-report ol {
+  list-style: decimal;
+}
+.analysis-report li {
+  margin: 0.25rem 0;
+}
+.analysis-report a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+.analysis-report code {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, monospace;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.25rem;
+  font-size: 0.85em;
+}
+.analysis-report strong {
+  font-weight: 700;
+}
+.analysis-report em {
+  font-style: italic;
+}
+.analysis-report blockquote {
+  border-left: 3px solid color-mix(in srgb, currentColor 25%, transparent);
+  padding-left: 0.75rem;
+  margin: 0.75rem 0;
+  color: color-mix(in srgb, currentColor 75%, transparent);
+}
+.analysis-report table {
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  font-size: 0.9rem;
+  width: 100%;
+}
+.analysis-report th,
+.analysis-report td {
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}
+.analysis-report th {
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  font-weight: 600;
+}

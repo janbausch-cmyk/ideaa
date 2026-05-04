@@ -36,6 +36,10 @@ export async function ensureSchema(): Promise<void> {
           updated_at  timestamptz NOT NULL DEFAULT now()
         )
       `;
+      await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS analysis_report text`;
+      await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS analysis_error text`;
+      await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS analysis_started_at timestamptz`;
+      await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS analysis_finished_at timestamptz`;
     })().catch((err) => {
       schemaReady = null;
       throw err;
@@ -50,7 +54,16 @@ export type IdeaRow = {
   status: string;
   created_at: string;
   updated_at: string;
+  analysis_report: string | null;
+  analysis_error: string | null;
+  analysis_started_at: string | null;
+  analysis_finished_at: string | null;
 };
+
+const IDEA_COLUMNS = `
+  id, raw_text, status, created_at, updated_at,
+  analysis_report, analysis_error, analysis_started_at, analysis_finished_at
+`;
 
 export async function insertIdea(rawText: string): Promise<IdeaRow> {
   await ensureSchema();
@@ -58,7 +71,7 @@ export async function insertIdea(rawText: string): Promise<IdeaRow> {
   const rows = (await sql`
     INSERT INTO ideas (raw_text)
     VALUES (${rawText})
-    RETURNING id, raw_text, status, created_at, updated_at
+    RETURNING ${sql.unsafe(IDEA_COLUMNS)}
   `) as IdeaRow[];
   return rows[0];
 }
@@ -75,10 +88,56 @@ export async function getIdea(id: string): Promise<IdeaRow | null> {
   await ensureSchema();
   const sql = getSql();
   const rows = (await sql`
-    SELECT id, raw_text, status, created_at, updated_at
+    SELECT ${sql.unsafe(IDEA_COLUMNS)}
     FROM ideas
     WHERE id = ${id}::uuid
     LIMIT 1
   `) as IdeaRow[];
   return rows[0] ?? null;
+}
+
+export async function markAnalysisStarted(id: string): Promise<void> {
+  if (!isValidIdeaId(id)) return;
+  await ensureSchema();
+  const sql = getSql();
+  await sql`
+    UPDATE ideas
+    SET analysis_started_at = now(), updated_at = now()
+    WHERE id = ${id}::uuid AND analysis_started_at IS NULL
+  `;
+}
+
+export async function saveAnalysisReady(
+  id: string,
+  report: string,
+): Promise<void> {
+  if (!isValidIdeaId(id)) return;
+  await ensureSchema();
+  const sql = getSql();
+  await sql`
+    UPDATE ideas
+    SET status = 'ready',
+        analysis_report = ${report},
+        analysis_error = NULL,
+        analysis_finished_at = now(),
+        updated_at = now()
+    WHERE id = ${id}::uuid
+  `;
+}
+
+export async function saveAnalysisFailed(
+  id: string,
+  errorMessage: string,
+): Promise<void> {
+  if (!isValidIdeaId(id)) return;
+  await ensureSchema();
+  const sql = getSql();
+  await sql`
+    UPDATE ideas
+    SET status = 'failed',
+        analysis_error = ${errorMessage},
+        analysis_finished_at = now(),
+        updated_at = now()
+    WHERE id = ${id}::uuid
+  `;
 }

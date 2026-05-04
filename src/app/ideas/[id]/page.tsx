@@ -7,7 +7,7 @@ import { getIdea } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-const PLAN_HEADING_RE = /(^|\n)##\s*6\.\s/;
+const PLAN_HEADING_RE = /(^|\n)##\s*7\.\s/;
 
 function splitReportAndPlan(markdown: string): {
   report: string;

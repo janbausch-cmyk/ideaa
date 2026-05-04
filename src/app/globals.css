@@ -108,3 +108,64 @@ body {
   background: color-mix(in srgb, currentColor 6%, transparent);
   font-weight: 600;
 }
+
+@media print {
+  @page {
+    margin: 2cm;
+  }
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    background: #ffffff !important;
+    min-height: 0 !important;
+  }
+  section {
+    border: none !important;
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin-bottom: 1.25rem;
+    page-break-inside: avoid;
+  }
+  .analysis-report {
+    color: #000000 !important;
+  }
+  .analysis-report h1,
+  .analysis-report h2,
+  .analysis-report h3 {
+    page-break-after: avoid;
+    break-after: avoid-page;
+    color: #000000;
+  }
+  .analysis-report h2 {
+    border-top: 1px solid #cccccc;
+    padding-top: 0.5rem;
+    margin-top: 1rem;
+  }
+  .analysis-report a {
+    color: #000000;
+    text-decoration: underline;
+  }
+  .analysis-report a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #555555;
+    word-break: break-all;
+  }
+  .analysis-report pre,
+  .analysis-report blockquote,
+  .analysis-report table,
+  .analysis-report ul,
+  .analysis-report ol {
+    page-break-inside: avoid;
+  }
+  .analysis-report code {
+    background: #f3f3f3 !important;
+  }
+}

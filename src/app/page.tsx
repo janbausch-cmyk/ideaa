@@ -1,3 +1,5 @@
+import PreviousIdeasList from "@/components/PreviousIdeasList";
+
 import { submitIdea } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -66,6 +68,8 @@ export default async function Home({
           Plain HTML, single-tenant, v0. No accounts. Your idea is saved with a
           shareable URL you can return to.
         </p>
+
+        <PreviousIdeasList />
       </div>
     </main>
   );

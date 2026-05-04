@@ -3,6 +3,10 @@ import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+import CopyLinkButton from "@/components/CopyLinkButton";
+import FavoriteButton from "@/components/FavoriteButton";
+import PrintButton from "@/components/PrintButton";
+import RecordHistoryEntry from "@/components/RecordHistoryEntry";
 import { getIdea } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -68,19 +72,27 @@ export default async function IdeaPage({
     notFound();
   }
   const status = describeStatus(idea.status);
-  const submittedAt = new Date(idea.created_at).toLocaleString();
+  const submittedAtDate = new Date(idea.created_at);
+  const submittedAt = submittedAtDate.toLocaleString();
+  const submittedAtIso = submittedAtDate.toISOString();
   const isProcessing = status.tone === "processing";
+  const isReady = status.tone === "ready";
 
   return (
-    <main className="flex min-h-screen flex-col items-center bg-zinc-50 px-6 py-16 font-sans dark:bg-black">
+    <main className="flex min-h-screen flex-col items-center bg-zinc-50 px-6 py-16 font-sans dark:bg-black print:bg-white print:py-0">
       {isProcessing ? (
         <meta httpEquiv="refresh" content="5" />
       ) : null}
+      <RecordHistoryEntry
+        id={idea.id}
+        rawText={idea.raw_text}
+        submittedAt={submittedAtIso}
+      />
       <div className="flex w-full max-w-2xl flex-col gap-6">
         <header className="flex flex-col gap-1">
           <Link
             href="/"
-            className="text-sm text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+            className="no-print text-sm text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
           >
             ← New idea
           </Link>
@@ -91,6 +103,12 @@ export default async function IdeaPage({
             Submitted {submittedAt}
           </p>
         </header>
+
+        <div className="no-print flex flex-wrap items-center gap-2">
+          <CopyLinkButton />
+          <FavoriteButton id={idea.id} />
+          {isReady ? <PrintButton /> : null}
+        </div>
 
         <section
           className={

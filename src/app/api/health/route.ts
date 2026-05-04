@@ -44,10 +44,16 @@ export async function GET() {
     const rows = (await sql`SELECT count(*)::int AS n FROM ideas`) as Array<{
       n: number;
     }>;
+    const failed24h = (await sql`
+      SELECT count(*)::int AS n
+      FROM ideas
+      WHERE status = 'failed' AND created_at > now() - interval '24 hours'
+    `) as Array<{ n: number }>;
     return Response.json({
       ok: true,
       env,
       ideas_count: rows[0]?.n ?? 0,
+      analysis_failed_24h: failed24h[0]?.n ?? 0,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

@@ -6,6 +6,8 @@ type EnvCheck = {
   has_database_url: boolean;
   has_postgres_url: boolean;
   has_postgres_url_non_pooling: boolean;
+  has_anthropic_api_key: boolean;
+  vercel_env: string | null;
 };
 
 function envCheck(): EnvCheck {
@@ -13,6 +15,8 @@ function envCheck(): EnvCheck {
     has_database_url: Boolean(process.env.DATABASE_URL),
     has_postgres_url: Boolean(process.env.POSTGRES_URL),
     has_postgres_url_non_pooling: Boolean(process.env.POSTGRES_URL_NON_POOLING),
+    has_anthropic_api_key: Boolean(process.env.ANTHROPIC_API_KEY),
+    vercel_env: process.env.VERCEL_ENV ?? null,
   };
 }
 

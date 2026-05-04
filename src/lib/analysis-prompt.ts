@@ -61,8 +61,8 @@ The section must contain FIVE bullets in this exact order, each following the pa
 
 - **Recommended stack** — \`frontend: <X>; backend: <Y>; data: <Z>; hosting: <W>\`. Why: <one-line — pick the cheapest path to "running on the internet" that fits the wedge; do NOT default to Next.js + Postgres if the idea is a Figma plugin, a Chrome extension, an iOS app, or a hardware product>.
 - **Time-to-MVP** — \`<low>w / <expected>w / <high>w\` person-weeks for one solo founder full-time. Definition of MVP: from \`git init\` to a stranger can use the core flow end-to-end. Do NOT confuse with "feature-complete."
-- **Build cost (one-time)** — \`solo: €<low>–€<high>\` (founder builds; counts paid services consumed during the build, not founder time) and \`hire out: €<low>–€<high>\` (typical EU contractor rates, cite the source). Both are ranges, not point estimates. Solo build cost for a software v0 is usually under €1,500; if you write more, justify it (hardware tooling, paid data, regulated audit, etc.).
-- **Run cost (monthly)** — \`hosting €<X> [Source] + LLM/API €<Y> [Source] + key SaaS €<Z> [Source] = €<total>/mo\` at first 100 active users. Each component must cite a pricing URL the search returned. If LLM cost dominates, write the per-call estimate (\`~<N>k input + <M>k output tokens × <P> calls/mo\`).
+- **Build cost (one-time)** — \`solo: €<low>–€<high>\` (founder builds; counts paid services consumed during the build, not founder time) and \`hire out: €<low>–€<high>\` at \`[<Source Label>](https://…)\` EU contractor rates. The hire-out figure MUST end with a markdown link \`[Label](URL)\` to the rate source — not bare text like "per Toptal" or "(Berlin freelancer report)". Both are ranges, not point estimates. Solo build cost for a software v0 is usually under €1,500; if you write more, justify it (hardware tooling, paid data, regulated audit, etc.) AND cite the cost driver with its own \`[Label](URL)\` link.
+- **Run cost (monthly)** — \`hosting €<X> [Provider Pricing](https://…) + LLM/API €<Y> [Provider Pricing](https://…) + key SaaS €<Z> [Provider Pricing](https://…) = €<total>/mo\` at first 100 active users. Each component MUST be followed by a \`[Label](URL)\` markdown link in that exact position — not "[Source]" placeholder text, not a parenthetical "(per Vercel)", not a quote. If LLM cost dominates, write the per-call estimate (\`~<N>k input + <M>k output tokens × <P> calls/mo\`).
 - **Top 3 build risks** — three sub-bullets, each \`<risk in one sentence>. Mitigation: <one sentence>.\` Risks must be **technical / build / operational** (not market — those go in §3). Examples: vendor rate limits, API ToS exposure, model-quality cliff at scale, vendor lock-in, scraping fragility, app-store review risk, hardware tooling lead time.
 
 Rules — every bullet MUST satisfy ALL of these:
@@ -70,6 +70,7 @@ Rules — every bullet MUST satisfy ALL of these:
 - **Stack pick matches the medium.** Figma plugin, Chrome extension, iOS-only app, Twilio bot, hardware — pick the right primitive. "Next.js + Postgres" is not a default; it is a choice you must defend in the *why* line.
 - **EUR only** for cost figures. Convert if the source quotes USD; show the conversion as \`($X ≈ €Y at 1 USD ≈ 0.92 EUR\`) on first occurrence, then drop it.
 - **Pricing URLs are real and current.** Use web_search; never invent a price. If the search returns nothing for a specific component, mark that component \`searched but unconfirmed — queries: "q1", "q2"\` and exclude it from the total (do not pad the total with a guess).
+- **Every cited source is a markdown link.** \`[Label](https://…)\`. Never \`per Toptal\`, \`(source: Vercel)\`, \`see Anthropic pricing\`, \`[Source]\` placeholder, or any prose mention of a source without the link wrapper. If a cost figure references a source, that source MUST be a clickable \`[Label](URL)\` adjacent to the figure on the same bullet.
 - **No bare "AI / cloud" line item.** Name the actual provider you priced (Anthropic, OpenAI, Vercel, Supabase, Fly.io, Cloudflare, Stripe, etc.). One named provider per line item.
 - **EU contractor rates** for hire-out: anchor to a publicly searchable source (e.g. Toptal, Berlin/Lisbon/Madrid freelancer reports, Honeypot/Stack Overflow EU salary). Senior fullstack EU rates are typically €500–€900/day in 2025 — but cite, do not assume.
 
@@ -100,6 +101,7 @@ Sanity rule: solo build < hire-out build by at least 5×. If they are within 2×
 11. Sizing without sources. Every TAM/SAM/SOM figure must cite a real URL or be flagged \`searched but unconfirmed\`.
 12. SOM equals SAM. SOM must be a realistic 3-year solo capture, not the addressable market.
 13. Build cost without sources. Every € figure in §7 must trace to a cited pricing URL or be flagged \`searched but unconfirmed\`.
+13a. Source named in prose without markdown link wrapper. \`per Toptal report\`, \`(source: Vercel)\`, \`see Anthropic pricing\` are all violations — the source MUST be \`[Label](URL)\` adjacent to the figure. \`[Source]\` literal placeholder is also a violation.
 14. Stack default-drift. §7 stack must match the idea's medium; do not write Next.js + Postgres on a Figma-plugin or hardware idea.
 15. Market risks duplicated in §7. §7 risks must be *technical / build / ops* — market risks belong in §3.
 

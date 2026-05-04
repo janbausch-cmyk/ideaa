@@ -7,6 +7,22 @@ import { getIdea } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
+const PLAN_HEADING_RE = /(^|\n)##\s*6\.\s/;
+
+function splitReportAndPlan(markdown: string): {
+  report: string;
+  plan: string | null;
+} {
+  const match = PLAN_HEADING_RE.exec(markdown);
+  if (!match || match.index === undefined) {
+    return { report: markdown.trim(), plan: null };
+  }
+  const splitAt = match.index + (match[1] === "\n" ? 1 : 0);
+  const report = markdown.slice(0, splitAt).trim();
+  const plan = markdown.slice(splitAt).trim();
+  return { report, plan: plan || null };
+}
+
 type StatusInfo = {
   label: string;
   description: string;
@@ -124,18 +140,37 @@ export default async function IdeaPage({
           </pre>
         </section>
 
-        {status.tone === "ready" && idea.analysis_report ? (
-          <section className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-              Validation report
-            </h2>
-            <article className="analysis-report text-sm">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {idea.analysis_report}
-              </ReactMarkdown>
-            </article>
-          </section>
-        ) : null}
+        {status.tone === "ready" && idea.analysis_report
+          ? (() => {
+              const { report, plan } = splitReportAndPlan(idea.analysis_report);
+              return (
+                <>
+                  <section className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
+                    <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                      Validation report
+                    </h2>
+                    <article className="analysis-report text-sm">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {report}
+                      </ReactMarkdown>
+                    </article>
+                  </section>
+                  {plan ? (
+                    <section className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
+                      <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                        Implementation plan
+                      </h2>
+                      <article className="analysis-report text-sm">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {plan}
+                        </ReactMarkdown>
+                      </article>
+                    </section>
+                  ) : null}
+                </>
+              );
+            })()
+          : null}
       </div>
     </main>
   );

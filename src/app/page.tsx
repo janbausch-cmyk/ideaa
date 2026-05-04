@@ -5,6 +5,11 @@ import PreviousIdeasList from "@/components/PreviousIdeasList";
 import { submitIdea } from "./actions";
 
 export const dynamic = "force-dynamic";
+// The submit server action kicks the worker tick via after(); a typical
+// analysis takes 60–90s and a 5-idea batch with concurrency 3 needs ~180s.
+// Without this, the after() handler is killed before the second wave of
+// claims completes and rows are stranded in 'running'.
+export const maxDuration = 300;
 
 const ERRORS: Record<string, string> = {
   empty: "Please paste an idea before submitting.",

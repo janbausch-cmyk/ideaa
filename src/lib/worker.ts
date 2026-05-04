@@ -54,10 +54,12 @@ export async function runWorkerTick(): Promise<void> {
   const concurrency = getConcurrency();
   activeTick = (async () => {
     try {
-      // Cheap recovery pass: anything stuck in 'running' for >10 min is
-      // assumed dead and re-queued.
+      // Cheap recovery pass: anything stuck in 'running' for >150s is
+      // assumed dead and re-queued. (A typical analysis takes 60-90s; we
+      // pad to 150s to avoid clobbering healthy in-flight runs but still
+      // recover quickly from a serverless function kill.)
       try {
-        await requeueStaleRunning(600);
+        await requeueStaleRunning(150);
       } catch (err) {
         console.error("[worker] stale-recovery failed", err);
       }

@@ -49,11 +49,25 @@ export async function GET() {
       FROM ideas
       WHERE status = 'failed' AND created_at > now() - interval '24 hours'
     `) as Array<{ n: number }>;
+    const queue = (await sql`
+      SELECT
+        count(*) FILTER (WHERE status = 'queued')::int AS queued,
+        count(*) FILTER (WHERE status = 'running')::int AS running,
+        count(*) FILTER (
+          WHERE status = 'running'
+          AND analysis_started_at < now() - interval '10 minutes'
+        )::int AS stale_running
+      FROM ideas
+    `) as Array<{ queued: number; running: number; stale_running: number }>;
+    const q = queue[0] ?? { queued: 0, running: 0, stale_running: 0 };
     return Response.json({
       ok: true,
       env,
       ideas_count: rows[0]?.n ?? 0,
       analysis_failed_24h: failed24h[0]?.n ?? 0,
+      queue_depth: q.queued,
+      running: q.running,
+      stale_running: q.stale_running,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

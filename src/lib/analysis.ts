@@ -4,10 +4,9 @@ import Anthropic from "@anthropic-ai/sdk";
 
 import { ANALYSIS_SYSTEM_PROMPT } from "./analysis-prompt";
 import {
-  getIdea,
-  markAnalysisStarted,
   saveAnalysisFailed,
   saveAnalysisReady,
+  type IdeaRow,
   type ToolTraceEntry,
 } from "./db";
 
@@ -82,14 +81,16 @@ function extractToolTrace(
   return trace;
 }
 
-export async function analyzeIdea(ideaId: string): Promise<void> {
-  const idea = await getIdea(ideaId);
-  if (!idea) return;
-  if (idea.status !== "processing") return;
-  if (idea.analysis_started_at) return;
-
-  await markAnalysisStarted(ideaId);
-
+/**
+ * Run the Anthropic analysis for an idea that has already been claimed
+ * (status='running'). Persists either a 'done' or 'failed' terminal state.
+ *
+ * Idempotency: if the model call fails, the row is marked 'failed' and the
+ * worker stops touching it. The stale-running recovery in db.ts handles the
+ * case where the worker process is killed mid-flight before we record either
+ * outcome.
+ */
+export async function analyzeClaimedIdea(idea: IdeaRow): Promise<void> {
   try {
     const client = getClient();
     const response = await client.messages.create({
@@ -122,9 +123,9 @@ export async function analyzeIdea(ideaId: string): Promise<void> {
     if (!report) {
       throw new Error("Empty response from analysis model.");
     }
-    await saveAnalysisReady(ideaId, report, trace.length > 0 ? trace : null);
+    await saveAnalysisReady(idea.id, report, trace.length > 0 ? trace : null);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    await saveAnalysisFailed(ideaId, message);
+    await saveAnalysisFailed(idea.id, message);
   }
 }

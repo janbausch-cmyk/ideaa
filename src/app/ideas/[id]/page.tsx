@@ -50,10 +50,18 @@ function describeStatus(status: string): StatusInfo {
           "Something went wrong while analysing this idea. Try resubmitting from the home page.",
         tone: "failed",
       };
+    case "queued":
+      return {
+        label: "Queued",
+        description:
+          "Your idea is queued and will be picked up by a worker shortly. This page refreshes automatically.",
+        tone: "processing",
+      };
+    case "running":
     case "processing":
     default:
       return {
-        label: "Processing",
+        label: "Analyzing",
         description:
           "We're analysing your idea. This page refreshes automatically when the report is ready — usually under 60 seconds.",
         tone: "processing",

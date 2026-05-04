@@ -1,5 +1,5 @@
-import { analyzeIdea } from "@/lib/analysis";
 import { getIdea, isValidIdeaId } from "@/lib/db";
+import { processIdeaById } from "@/lib/worker";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -73,12 +73,19 @@ export async function POST(
   }
 
   if (auth.mode === "bootstrap") {
-    if (before.status !== "processing" || before.analysis_started_at) {
+    // Bootstrap mode is for unsticking abandoned rows: queued (no worker
+    // ever picked it up) or running for too long.
+    const isStuckQueued = before.status === "queued" && !before.analysis_started_at;
+    const isStuckRunning =
+      before.status === "running" &&
+      !!before.analysis_started_at &&
+      Date.now() - new Date(before.analysis_started_at).getTime() >= STUCK_AGE_MS;
+    if (!isStuckQueued && !isStuckRunning) {
       return Response.json(
         {
           ok: false,
           error:
-            "ADMIN_TOKEN not set; bootstrap mode only triggers stuck rows (status=processing, analysis_started_at IS NULL).",
+            "ADMIN_TOKEN not set; bootstrap mode only triggers stuck rows (status=queued, or status=running for >5min).",
           idea: {
             id: before.id,
             status: before.status,
@@ -88,24 +95,27 @@ export async function POST(
         { status: 403 },
       );
     }
-    const ageMs = Date.now() - new Date(before.created_at).getTime();
-    if (ageMs < STUCK_AGE_MS) {
-      return Response.json(
-        {
-          ok: false,
-          error: `Bootstrap mode requires created_at older than ${STUCK_AGE_MS / 1000}s. Idea is ${Math.round(ageMs / 1000)}s old.`,
-        },
-        { status: 403 },
-      );
+    if (isStuckQueued) {
+      const ageMs = Date.now() - new Date(before.created_at).getTime();
+      if (ageMs < STUCK_AGE_MS) {
+        return Response.json(
+          {
+            ok: false,
+            error: `Bootstrap mode requires created_at older than ${STUCK_AGE_MS / 1000}s. Idea is ${Math.round(ageMs / 1000)}s old.`,
+          },
+          { status: 403 },
+        );
+      }
     }
   }
 
-  await analyzeIdea(id);
+  const result = await processIdeaById(id, STUCK_AGE_MS / 1000);
 
   const after = await getIdea(id);
   return Response.json({
     ok: true,
     auth_mode: auth.mode,
+    claimed: result.claimed,
     idea: after && {
       id: after.id,
       status: after.status,

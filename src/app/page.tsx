@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import PreviousIdeasList from "@/components/PreviousIdeasList";
 
 import { submitIdea } from "./actions";
@@ -6,7 +8,9 @@ export const dynamic = "force-dynamic";
 
 const ERRORS: Record<string, string> = {
   empty: "Please paste an idea before submitting.",
-  "too-long": "Idea is too long (max 20,000 characters).",
+  "too-long": "One of the ideas is too long (max 20,000 characters each).",
+  "too-many": "Too many ideas in one batch (max 20).",
+  "insert-failed": "Could not save your idea. Please try again.",
 };
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -47,10 +51,14 @@ export default async function Home({
             name="idea"
             required
             rows={10}
-            maxLength={20000}
-            placeholder="A subscription box for…"
+            placeholder={"A subscription box for…\n\n---\n\nA marketplace where…"}
             className="w-full resize-y rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
           />
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            Tip: paste several ideas at once, separated by a line of{" "}
+            <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">---</code>{" "}
+            (max 20 per batch, 20,000 chars each). They run in parallel.
+          </p>
           {errorMessage ? (
             <p className="text-sm text-red-600 dark:text-red-400">
               {errorMessage}
@@ -65,8 +73,11 @@ export default async function Home({
         </form>
 
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          Plain HTML, single-tenant, v0. No accounts. Your idea is saved with a
-          shareable URL you can return to.
+          Plain HTML, single-tenant, v0. No accounts. Your ideas are saved with
+          shareable URLs you can return to.{" "}
+          <Link href="/ideas" className="underline">
+            See all your ideas →
+          </Link>
         </p>
 
         <PreviousIdeasList />

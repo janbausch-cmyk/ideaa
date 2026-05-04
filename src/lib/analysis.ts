@@ -12,7 +12,6 @@ import {
 
 const ANALYSIS_MODEL = "claude-opus-4-7";
 const MAX_TOKENS = 2400;
-const TEMPERATURE = 0.4;
 
 let cachedClient: Anthropic | null = null;
 
@@ -54,7 +53,6 @@ export async function analyzeIdea(ideaId: string): Promise<void> {
     const response = await client.messages.create({
       model: ANALYSIS_MODEL,
       max_tokens: MAX_TOKENS,
-      temperature: TEMPERATURE,
       system: [
         {
           type: "text",

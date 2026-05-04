@@ -26,6 +26,33 @@ function isAuthorized(request: Request): {
   return { ok: true, mode: "bootstrap" };
 }
 
+export async function GET(
+  _request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  const { id } = await context.params;
+  if (!isValidIdeaId(id)) {
+    return Response.json({ ok: false, error: "Invalid idea id." }, { status: 400 });
+  }
+  const idea = await getIdea(id);
+  if (!idea) {
+    return Response.json({ ok: false, error: "Idea not found." }, { status: 404 });
+  }
+  return Response.json({
+    ok: true,
+    idea: {
+      id: idea.id,
+      status: idea.status,
+      created_at: idea.created_at,
+      analysis_started_at: idea.analysis_started_at,
+      analysis_finished_at: idea.analysis_finished_at,
+      analysis_error: idea.analysis_error,
+      analysis_tool_trace: idea.analysis_tool_trace,
+      report_chars: idea.analysis_report?.length ?? 0,
+    },
+  });
+}
+
 export async function POST(
   request: Request,
   context: { params: Promise<{ id: string }> },

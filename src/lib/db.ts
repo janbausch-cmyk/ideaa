@@ -40,6 +40,7 @@ export async function ensureSchema(): Promise<void> {
       await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS analysis_error text`;
       await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS analysis_started_at timestamptz`;
       await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS analysis_finished_at timestamptz`;
+      await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS analysis_tool_trace jsonb`;
     })().catch((err) => {
       schemaReady = null;
       throw err;
@@ -47,6 +48,20 @@ export async function ensureSchema(): Promise<void> {
   }
   return schemaReady;
 }
+
+export type ToolTraceEntry =
+  | {
+      kind: "search_request";
+      tool_use_id: string;
+      input: { query?: string } & Record<string, unknown>;
+    }
+  | {
+      kind: "search_result";
+      tool_use_id: string;
+      result_count: number;
+      urls: string[];
+      error?: string;
+    };
 
 export type IdeaRow = {
   id: string;
@@ -58,11 +73,13 @@ export type IdeaRow = {
   analysis_error: string | null;
   analysis_started_at: string | null;
   analysis_finished_at: string | null;
+  analysis_tool_trace: ToolTraceEntry[] | null;
 };
 
 const IDEA_COLUMNS = `
   id, raw_text, status, created_at, updated_at,
-  analysis_report, analysis_error, analysis_started_at, analysis_finished_at
+  analysis_report, analysis_error, analysis_started_at, analysis_finished_at,
+  analysis_tool_trace
 `;
 
 export async function insertIdea(rawText: string): Promise<IdeaRow> {
@@ -110,15 +127,18 @@ export async function markAnalysisStarted(id: string): Promise<void> {
 export async function saveAnalysisReady(
   id: string,
   report: string,
+  toolTrace: ToolTraceEntry[] | null,
 ): Promise<void> {
   if (!isValidIdeaId(id)) return;
   await ensureSchema();
   const sql = getSql();
+  const traceJson = toolTrace ? JSON.stringify(toolTrace) : null;
   await sql`
     UPDATE ideas
     SET status = 'ready',
         analysis_report = ${report},
         analysis_error = NULL,
+        analysis_tool_trace = ${traceJson}::jsonb,
         analysis_finished_at = now(),
         updated_at = now()
     WHERE id = ${id}::uuid

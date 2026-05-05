@@ -101,7 +101,15 @@ same Postgres. Not part of the customer product surface.
 - **Pull (slice 1):** plain text → comment on the active issue. Tag any
   message with `#IDEAA-12` to override the routing. Buttons map to
   `accept` (status → in_progress), `reject` (cancelled), `defer` (backlog).
-- **Voice / commands / approvals:** wired in upcoming slices.
+- **Commands (slice 4):**
+  - `/inbox` — list your open Paperclip assignments.
+  - `/status` — bridge health (mapping, inbox count, push events 24h).
+  - `/new <title>` — create an issue. Goal defaults to
+    `TELEGRAM_NEW_DEFAULT_GOAL_ID`, falling back to the goal of the last
+    push-context issue. Default assignee is
+    `TELEGRAM_NEW_DEFAULT_ASSIGNEE_AGENT_ID` (unset = unassigned).
+  - `/help` — quick reference.
+- **Voice / approvals:** wired in upcoming slices.
 
 ### Whitelist
 

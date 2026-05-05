@@ -1,7 +1,7 @@
 // Pull: incoming Telegram updates → Paperclip actions.
-// Slice 1: text replies become comments on the active context issue (or an
-// explicitly-tagged issue identifier). Voice + commands + callbacks come
-// next.
+// Routes text replies (active-context comment or explicit #IDEAA-N tag),
+// inline-button callbacks, and slash commands. Voice transcription is
+// stubbed pending Slice 3.
 
 import {
   getActiveIssueContext,
@@ -17,6 +17,7 @@ import {
   patchIssue,
   type IssueSummary,
 } from "./paperclip";
+import { dispatchCommand } from "./commands";
 import { getTelegramConfig, isAllowedTelegramUser, paperclipIssueUrl } from "./config";
 
 export type TelegramUpdate = {
@@ -72,7 +73,12 @@ export async function handleUpdate(update: TelegramUpdate): Promise<{
   if (!text) return { ok: true, action: "skip:empty" };
 
   if (text.startsWith("/")) {
-    return handleCommand(text, msg.chat.id, config);
+    return dispatchCommand({
+      text,
+      telegramUserId: msg.from.id,
+      chatId: msg.chat.id,
+      messageId: msg.message_id,
+    });
   }
 
   return handleTextReply({
@@ -149,21 +155,6 @@ async function handleTextReply(args: {
     });
     return { ok: true, action: "reply:error", detail: message };
   }
-}
-
-async function handleCommand(
-  text: string,
-  chatId: number,
-  _config: ReturnType<typeof getTelegramConfig>,
-): Promise<{ ok: boolean; action: string }> {
-  const [cmd] = text.split(/\s+/, 1);
-  // Slice 4 wires up /inbox /status /new — ack here so the user knows the
-  // bot is alive.
-  await sendMessage({
-    chat_id: chatId,
-    text: `Befehl ${cmd} ist noch nicht implementiert (Slice 4).`,
-  });
-  return { ok: true, action: `command:${cmd}:not_implemented` };
 }
 
 async function handleCallbackQuery(

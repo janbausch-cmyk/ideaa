@@ -4,8 +4,6 @@ export type TelegramConfig = {
   botToken: string;
   webhookSecret: string | null;
   allowedUserIds: Set<bigint>;
-  janPaperclipUserId: string | null;
-  cronSecret: string | null;
   publicAppUrl: string | null;
   paperclipUiPrefix: string; // e.g. "IDEAA"
 };
@@ -32,8 +30,6 @@ export function getTelegramConfig(): TelegramConfig {
     botToken,
     webhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET ?? null,
     allowedUserIds: parseAllowedIds(process.env.TELEGRAM_ALLOWED_USER_IDS),
-    janPaperclipUserId: process.env.JAN_PAPERCLIP_USER_ID ?? null,
-    cronSecret: process.env.CRON_SECRET ?? null,
     publicAppUrl:
       process.env.TELEGRAM_PUBLIC_APP_URL ??
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null),

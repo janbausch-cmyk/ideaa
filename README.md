@@ -60,9 +60,13 @@ the Vercel Neon integration) configured before the form will work.
 
 ## Telegram bridge (internal — IDEAA-27)
 
-Internal-only Telegram bot that lets Jan get pushed agent activity and reply
-inline. Lives inside this app under `/api/telegram/*`; same Vercel deploy,
-same Postgres. Not part of the customer product surface.
+Internal-only Telegram bot for Jan to interact with Paperclip from his
+phone. **Webhook-only flow** — Telegram calls `/api/telegram/webhook` when
+Jan sends the bot a message, the bot answers; there is **no proactive
+push** from the bridge. To check what's new, Jan runs `/inbox`.
+
+Lives inside this app under `/api/telegram/*`; same Vercel deploy, same
+Postgres. Not part of the customer product surface.
 
 ### One-time setup
 
@@ -70,10 +74,10 @@ same Postgres. Not part of the customer product surface.
 2. **Vercel env:** set the variables in `.env.example` under
    `--- Telegram bridge ---` and `--- Paperclip API ---`. At minimum:
    `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` (any random string),
-   `TELEGRAM_ALLOWED_USER_IDS` (Jan's TG user id), `JAN_PAPERCLIP_USER_ID`,
+   `TELEGRAM_ALLOWED_USER_IDS` (Jan's TG user id),
    `PAPERCLIP_API_URL`, `PAPERCLIP_BOT_API_KEY`, `PAPERCLIP_COMPANY_ID`,
-   `CRON_SECRET`, `ADMIN_TOKEN`.
-3. **Register the webhook** (replace the host):
+   `ADMIN_TOKEN`.
+3. **Register the webhook** with Telegram (replace the host):
    ```bash
    curl -X POST https://<vercel-host>/api/telegram/admin \
      -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -81,7 +85,8 @@ same Postgres. Not part of the customer product surface.
      -d '{"op":"register-webhook"}'
    ```
    Verify with `GET /api/telegram/admin` (same auth).
-4. **Register Jan's chat** so the push worker knows where to send:
+4. **Register Jan's chat** so the bot can resolve the Telegram user to a
+   Paperclip user when answering commands:
    ```bash
    curl -X POST https://<vercel-host>/api/telegram/admin \
      -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -90,36 +95,42 @@ same Postgres. Not part of the customer product surface.
    ```
    Easiest way to get `telegram_chat_id`: send any message to the bot, then
    look at the most recent webhook payload in Vercel logs.
-5. **Cron:** `vercel.json` registers `/api/telegram/push` to fire every
-   minute. Vercel auto-includes `Authorization: Bearer $CRON_SECRET`.
 
 ### Routes
 
-- `POST /api/telegram/webhook` — Telegram → Paperclip ingress. Validates the
-  `X-Telegram-Bot-Api-Secret-Token` header against `TELEGRAM_WEBHOOK_SECRET`.
-- `GET|POST /api/telegram/push` — cron-driven push of new assignments,
-  mentions, and approvals to Jan.
+- `POST /api/telegram/webhook` — Telegram → Paperclip ingress. Validates
+  the `X-Telegram-Bot-Api-Secret-Token` header against
+  `TELEGRAM_WEBHOOK_SECRET`.
 - `GET|POST /api/telegram/admin` — `register-webhook`, `delete-webhook`,
   `register-chat`. Requires `Authorization: Bearer $ADMIN_TOKEN`.
 
-### Behaviour
+### Commands
 
-- **Push (slice 1):** any new Paperclip issue with
-  `assigneeUserId == JAN_PAPERCLIP_USER_ID` updated since the last cursor
-  hit gets a Telegram message with inline Akzeptieren / Ablehnen / Später
-  buttons. The pushed issue becomes Jan's "active context".
-- **Pull (slice 1):** plain text → comment on the active issue. Tag any
-  message with `#IDEAA-12` to override the routing. Buttons map to
-  `accept` (status → in_progress), `reject` (cancelled), `defer` (backlog).
-- **Commands (slice 4):**
-  - `/inbox` — list your open Paperclip assignments.
-  - `/status` — bridge health (mapping, inbox count, push events 24h).
-  - `/new <title>` — create an issue. Goal defaults to
-    `TELEGRAM_NEW_DEFAULT_GOAL_ID`, falling back to the goal of the last
-    push-context issue. Default assignee is
-    `TELEGRAM_NEW_DEFAULT_ASSIGNEE_AGENT_ID` (unset = unassigned).
-  - `/help` — quick reference.
-- **Voice / approvals:** wired in upcoming slices.
+- `/inbox` — list your open Paperclip assignments.
+- `/status` — bridge health (mapping, inbox count, active context).
+- `/new <title>` — create an issue. Goal defaults to
+  `TELEGRAM_NEW_DEFAULT_GOAL_ID`, falling back to the goal of the chat's
+  current active context (set by tagging an issue with `#IDEAA-N` in a
+  reply, or by running `/new`). Default assignee is
+  `TELEGRAM_NEW_DEFAULT_ASSIGNEE_AGENT_ID` (unset = unassigned).
+- `/help` — quick reference.
+
+### Replying to issues
+
+Plain text reply → comment on the chat's active issue. Tag any message
+with `#IDEAA-N` to switch context to that issue (and post the comment
+there). The active context is also pinned by `/new` and persists across
+messages.
+
+Inline-button callbacks (Akzeptieren / Ablehnen / Später) are wired and
+flip the issue status (`in_progress` / `cancelled` / `backlog`); they
+appear on messages the bot itself produces (e.g. an enriched `/inbox`
+output in a later slice).
+
+### Voice (planned)
+
+Voice notes will land via Whisper transcription in a follow-up slice
+(currently stubbed).
 
 ### Whitelist
 

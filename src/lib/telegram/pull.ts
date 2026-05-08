@@ -5,6 +5,7 @@
 
 import {
   getActiveIssueContext,
+  setActiveIssueContext,
   findPushedEventByMessageId,
 } from "./db";
 import {
@@ -116,7 +117,7 @@ async function handleTextReply(args: {
     await sendMessage({
       chat_id: chatId,
       text:
-        "Kein aktives Issue. Tagge ein Issue mit `#IDEAA-XX` oder warte auf eine Push-Nachricht.",
+        "Kein aktives Issue. Tagge ein Issue mit `#IDEAA-XX` oder ruf `/inbox` für deine offenen Aufgaben.",
       parse_mode: "Markdown",
       reply_to_message_id: messageId,
     });
@@ -134,6 +135,11 @@ async function handleTextReply(args: {
 
   try {
     await postComment(targetIssueId, body);
+    // Successful tag-routed reply pins the issue as the active context so a
+    // follow-up reply without a tag still lands on the right issue.
+    if (tag) {
+      await setActiveIssueContext(telegramUserId, targetIssueId);
+    }
     const link = paperclipIssueUrl(
       config.paperclipUiPrefix,
       targetIssueId,

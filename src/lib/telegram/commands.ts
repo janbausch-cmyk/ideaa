@@ -4,14 +4,13 @@ import { sendMessage } from "./client";
 import {
   getTelegramChat,
   getActiveIssueContext,
-  ensureTelegramSchema,
+  setActiveIssueContext,
 } from "./db";
 import {
   createIssue,
   getIssue,
   listAssignedToUser,
 } from "./paperclip";
-import { getSql } from "@/lib/db";
 import { getTelegramConfig, paperclipIssueUrl } from "./config";
 
 export type CommandResult = {
@@ -178,30 +177,13 @@ async function cmdStatus(args: {
     }
   }
 
-  let pushed24h: number | string = "?";
-  let lastPushAt: string | null = null;
-  try {
-    await ensureTelegramSchema();
-    const sql = getSql();
-    const rows = (await sql`
-      SELECT count(*)::int AS n,
-             max(created_at) AS last_at
-      FROM telegram_pushed_events
-      WHERE telegram_user_id = ${args.telegramUserId.toString()}::bigint
-        AND created_at > now() - interval '24 hours'
-    `) as Array<{ n: number; last_at: string | null }>;
-    pushed24h = rows[0]?.n ?? 0;
-    lastPushAt = rows[0]?.last_at ?? null;
-  } catch {
-    pushed24h = "n/a";
-  }
+  const ctx = chat ? await getActiveIssueContext(args.telegramUserId) : null;
 
   const lines = [
     "🩺 *Bridge-Status*",
     `• Mapped Paperclip-User: ${chat ? `\`${chat.paperclip_user_id}\`` : "❌ kein Mapping"}`,
     `• Offene Issues (Inbox): ${inboxCount}`,
-    `• Push-Events (24h): ${pushed24h}`,
-    `• Letzter Push: ${lastPushAt ? new Date(lastPushAt).toISOString() : "—"}`,
+    `• Aktiver Kontext: ${ctx?.active_issue_id ? `\`${ctx.active_issue_id}\`` : "—"}`,
   ];
   await sendMessage({
     chat_id: args.chatId,
@@ -228,7 +210,7 @@ async function cmdNew(args: {
     return { ok: true, action: "command:new:no_title" };
   }
 
-  // Resolve goal: env override → goal of last push-context issue → fail.
+  // Resolve goal: env override → goal of last tagged-context issue → fail.
   let goalId = process.env.TELEGRAM_NEW_DEFAULT_GOAL_ID ?? null;
   let parentId: string | null = null;
   if (!goalId) {
@@ -248,7 +230,8 @@ async function cmdNew(args: {
     await sendMessage({
       chat_id: args.chatId,
       text:
-        "Konnte kein Default-Goal ermitteln. Setze `TELEGRAM_NEW_DEFAULT_GOAL_ID` oder erst ein Issue per Push als Kontext setzen.",
+        "Konnte kein Default-Goal ermitteln. Setze `TELEGRAM_NEW_DEFAULT_GOAL_ID` oder tagge erst ein Issue mit `#IDEAA-XX`, bevor du `/new` rufst.",
+      parse_mode: "Markdown",
       reply_to_message_id: args.messageId,
     });
     return { ok: true, action: "command:new:no_goal" };
@@ -265,6 +248,9 @@ async function cmdNew(args: {
       parentId: parentId ?? undefined,
       assigneeAgentId,
     });
+    // Pin the new issue as the chat's active context so a follow-up text
+    // reply lands on it without needing a #-tag.
+    await setActiveIssueContext(args.telegramUserId, issue.id);
     const link = paperclipIssueUrl(
       config.paperclipUiPrefix,
       issue.identifier,

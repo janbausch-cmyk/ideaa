@@ -43,6 +43,16 @@ The `ideas` table is created on first request — no manual migration step.
 - `/ideas/<id>` — shareable URL showing the idea's processing status. The
   status flips from `processing` → `ready` once the analysis pipeline lands.
 
+### Admin
+
+- `/admin/login` — token form. Sets a 7-day HttpOnly cookie holding the value of `ADMIN_TOKEN`.
+- `/admin/ideas` — list of every idea with status filter, full-text search (raw text, analysis report, admin note), and sort.
+- `/admin/ideas/<id>` — detail view: original text, analysis output, tool trace, error message, plus actions to set the status, save a note + tags, kick off a re-analyse, or delete the row.
+- `/api/admin/export?format=json|csv` — full DB export, gated by the same admin token (cookie or `Authorization: Bearer`).
+- `/api/admin/analyze/<id>` — existing trace endpoint, now also gated.
+
+The admin surface is locked closed unless `ADMIN_TOKEN` is set on the deployment.
+
 ## Deploy
 
 Push to `main` and Vercel auto-deploys. Production needs `DATABASE_URL` (or

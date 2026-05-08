@@ -1,3 +1,4 @@
+import { isAdminRequestAuthorized } from "@/lib/admin-auth";
 import { getIdea, isValidIdeaId } from "@/lib/db";
 import { processIdeaById } from "@/lib/worker";
 
@@ -27,9 +28,18 @@ function isAuthorized(request: Request): {
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
+  // Gate the trace JSON behind the admin token/cookie. Previously this was
+  // unauthenticated; now that we have a proper admin auth surface, lock it
+  // down so prod doesn't leak full analysis traces to anyone with a UUID.
+  if (!(await isAdminRequestAuthorized(request))) {
+    return Response.json(
+      { ok: false, error: "Unauthorized." },
+      { status: 401 },
+    );
+  }
   const { id } = await context.params;
   if (!isValidIdeaId(id)) {
     return Response.json({ ok: false, error: "Invalid idea id." }, { status: 400 });

@@ -188,7 +188,7 @@ export async function advancePushCursor(
 
 export type PushedEventInsert = {
   telegramUserId: number | bigint;
-  kind: "assignment" | "mention" | "approval";
+  kind: "assignment" | "mention" | "approval" | "issue_detail";
   sourceId: string;
   telegramMsgId: number | bigint;
   paperclipIssueId?: string | null;
@@ -201,6 +201,9 @@ export async function recordPushedEvent(
   await ensureTelegramSchema();
   const sql = getSql();
   const payloadJson = e.payload === undefined ? null : JSON.stringify(e.payload);
+  // ON CONFLICT UPDATE rather than DO NOTHING so the latest message id wins:
+  // if the user repeats /issue IDEAA-N, the callback lookup must find the
+  // most-recently-sent message, not the original.
   const rows = (await sql`
     INSERT INTO telegram_pushed_events
       (telegram_user_id, kind, source_id, telegram_msg_id, paperclip_issue_id, payload)
@@ -210,10 +213,13 @@ export async function recordPushedEvent(
             ${e.telegramMsgId.toString()}::bigint,
             ${e.paperclipIssueId ?? null},
             ${payloadJson}::jsonb)
-    ON CONFLICT (telegram_user_id, kind, source_id) DO NOTHING
-    RETURNING id
-  `) as Array<{ id: string }>;
-  return { inserted: rows.length > 0 };
+    ON CONFLICT (telegram_user_id, kind, source_id) DO UPDATE
+      SET telegram_msg_id = EXCLUDED.telegram_msg_id,
+          payload = EXCLUDED.payload,
+          created_at = now()
+    RETURNING id, (xmax = 0) AS inserted
+  `) as Array<{ id: string; inserted: boolean }>;
+  return { inserted: rows[0]?.inserted ?? false };
 }
 
 export async function findPushedEventByMessageId(

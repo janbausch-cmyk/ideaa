@@ -1,10 +1,11 @@
 // Slash commands sent to the bot. Slice 4: /inbox, /status, /new.
 
-import { sendMessage } from "./client";
+import { sendMessage, type InlineKeyboardButton } from "./client";
 import {
   getTelegramChat,
   getActiveIssueContext,
   setActiveIssueContext,
+  recordPushedEvent,
 } from "./db";
 import {
   createIssue,
@@ -41,11 +42,12 @@ export async function dispatchCommand(args: {
   if (cmd === "/inbox") return cmdInbox(args);
   if (cmd === "/status") return cmdStatus(args);
   if (cmd === "/new") return cmdNew({ ...args, title: rest });
+  if (cmd === "/issue") return cmdIssue({ ...args, identifier: rest });
   if (cmd === "/start" || cmd === "/help") return cmdHelp(args);
 
   await sendMessage({
     chat_id: args.chatId,
-    text: `Unbekannter Befehl: ${cmd}. Verfügbar: /inbox, /status, /new <titel>, /help.`,
+    text: `Unbekannter Befehl: ${cmd}. Verfügbar: /inbox, /issue <ID>, /status, /new <titel>, /help.`,
     reply_to_message_id: args.messageId,
   });
   return { ok: true, action: `command:unknown:${cmd}` };
@@ -60,6 +62,7 @@ async function cmdHelp(args: {
     "",
     "Befehle:",
     "• `/inbox` — deine offenen Paperclip-Aufgaben",
+    "• `/issue IDEAA-N` — Detail mit Akzeptieren/Ablehnen/Später-Buttons",
     "• `/status` — kurzer Health-Check der Bridge",
     "• `/new <titel>` — neues Issue anlegen (zugewiesen an dich, du delegierst weiter)",
     "",
@@ -304,4 +307,93 @@ async function cmdNew(args: {
     });
     return { ok: true, action: "command:new:error", detail: message };
   }
+}
+
+const ISSUE_IDENTIFIER_RE = /^[A-Z]+-\d+$/;
+const ISSUE_DETAIL_PREVIEW_CHARS = 280;
+
+function issueDetailKeyboard(issueUuid: string): { inline_keyboard: InlineKeyboardButton[][] } {
+  return {
+    inline_keyboard: [
+      [
+        { text: "✅ Akzeptieren", callback_data: `accept:${issueUuid}` },
+        { text: "❌ Ablehnen", callback_data: `reject:${issueUuid}` },
+      ],
+      [
+        { text: "⏰ Später", callback_data: `defer:${issueUuid}` },
+      ],
+    ],
+  };
+}
+
+async function cmdIssue(args: {
+  identifier: string;
+  telegramUserId: number;
+  chatId: number;
+  messageId: number;
+}): Promise<CommandResult> {
+  const id = args.identifier.trim().toUpperCase();
+  if (!id || !ISSUE_IDENTIFIER_RE.test(id)) {
+    await sendMessage({
+      chat_id: args.chatId,
+      text: "Nutzung: `/issue IDEAA-12` — Identifier in Großbuchstaben, dann Bindestrich, dann Zahl.",
+      parse_mode: "Markdown",
+      reply_to_message_id: args.messageId,
+    });
+    return { ok: true, action: "command:issue:bad_identifier" };
+  }
+
+  let issue;
+  try {
+    issue = await getIssue(id);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    await sendMessage({
+      chat_id: args.chatId,
+      text: `⚠️ Issue nicht gefunden: ${message.slice(0, 240)}`,
+      reply_to_message_id: args.messageId,
+    });
+    return { ok: true, action: "command:issue:not_found", detail: message };
+  }
+
+  const config = getTelegramConfig();
+  const link = paperclipIssueUrl(config.paperclipUiPrefix, issue.identifier, null);
+  const badge = PRIORITY_BADGE[issue.priority] ?? "·";
+  const description = issue.description ?? "";
+  const preview = description.length > ISSUE_DETAIL_PREVIEW_CHARS
+    ? `${description.slice(0, ISSUE_DETAIL_PREVIEW_CHARS).trim()}…`
+    : description.trim();
+
+  const lines = [
+    `${badge} *${issue.identifier}* — ${issue.title}`,
+    `Status: \`${issue.status}\`   Priorität: \`${issue.priority}\``,
+    link,
+  ];
+  if (preview) {
+    lines.push("", preview);
+  }
+
+  const sent = await sendMessage({
+    chat_id: args.chatId,
+    text: lines.join("\n"),
+    parse_mode: "Markdown",
+    disable_web_page_preview: true,
+    reply_to_message_id: args.messageId,
+    reply_markup: issueDetailKeyboard(issue.id),
+  });
+
+  // Pin as active context so a follow-up text reply lands here without
+  // needing a #-tag, and record the message so the callback handler can
+  // verify the action belongs to a bot-sent surface.
+  await setActiveIssueContext(args.telegramUserId, issue.id);
+  await recordPushedEvent({
+    telegramUserId: args.telegramUserId,
+    kind: "issue_detail",
+    sourceId: issue.id,
+    telegramMsgId: sent.message_id,
+    paperclipIssueId: issue.id,
+    payload: { identifier: issue.identifier, title: issue.title },
+  });
+
+  return { ok: true, action: "command:issue:ok", detail: issue.id };
 }

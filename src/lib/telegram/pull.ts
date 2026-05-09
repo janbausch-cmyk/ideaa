@@ -1,7 +1,7 @@
 // Pull: incoming Telegram updates → Paperclip actions.
 // Routes text replies (active-context comment or explicit #IDEAA-N tag),
-// inline-button callbacks, and slash commands. Voice transcription is
-// stubbed pending Slice 3.
+// inline-button callbacks, slash commands, and voice messages
+// (transcribed via OpenAI Whisper, then routed like text).
 
 import {
   getActiveIssueContext,
@@ -12,6 +12,8 @@ import {
   sendMessage,
   answerCallbackQuery,
   editMessageReplyMarkup,
+  getFile,
+  downloadFile,
 } from "./client";
 import {
   postComment,
@@ -19,6 +21,7 @@ import {
   type IssueSummary,
 } from "./paperclip";
 import { dispatchCommand } from "./commands";
+import { transcribeAudio } from "./whisper";
 import { getTelegramConfig, isAllowedTelegramUser, paperclipIssueUrl } from "./config";
 
 export type TelegramUpdate = {
@@ -61,13 +64,13 @@ export async function handleUpdate(update: TelegramUpdate): Promise<{
   }
 
   if (msg.voice) {
-    // Voice transcription lands in Slice 3. For now ack and tell the user.
-    await sendMessage({
-      chat_id: msg.chat.id,
-      text: "🎙️ Sprachnachrichten kommen bald — Transkription wird gerade gebaut.",
-      reply_to_message_id: msg.message_id,
+    return handleVoiceMessage({
+      telegramUserId: msg.from.id,
+      chatId: msg.chat.id,
+      messageId: msg.message_id,
+      voice: msg.voice,
+      config,
     });
-    return { ok: true, action: "voice:not_implemented" };
   }
 
   const text = msg.text?.trim();
@@ -249,4 +252,81 @@ async function handleCallbackQuery(
   }
 
   return { ok: true, action: `callback:${verb}:ok`, detail: issueId };
+}
+
+const VOICE_MAX_DURATION_SEC = 300;
+
+async function handleVoiceMessage(args: {
+  telegramUserId: number;
+  chatId: number;
+  messageId: number;
+  voice: { file_id: string; duration: number; mime_type?: string };
+  config: ReturnType<typeof getTelegramConfig>;
+}): Promise<{ ok: boolean; action: string; detail?: string }> {
+  const { telegramUserId, chatId, messageId, voice, config } = args;
+
+  if (!process.env.OPENAI_API_KEY) {
+    await sendMessage({
+      chat_id: chatId,
+      text: "🎙️ Sprachnachrichten brauchen `OPENAI_API_KEY` in der Server-Env. Aktuell nicht gesetzt.",
+      parse_mode: "Markdown",
+      reply_to_message_id: messageId,
+    });
+    return { ok: true, action: "voice:no_openai_key" };
+  }
+
+  if (voice.duration > VOICE_MAX_DURATION_SEC) {
+    await sendMessage({
+      chat_id: chatId,
+      text: `🎙️ Sprachnachricht ist ${voice.duration}s lang — Limit ist ${VOICE_MAX_DURATION_SEC}s. Bitte kürzer.`,
+      reply_to_message_id: messageId,
+    });
+    return { ok: true, action: "voice:too_long" };
+  }
+
+  let transcript: string;
+  try {
+    const fileInfo = await getFile(voice.file_id);
+    if (!fileInfo.file_path) {
+      throw new Error("Telegram returned no file_path");
+    }
+    const audio = await downloadFile(fileInfo.file_path);
+    transcript = await transcribeAudio(audio, "voice.ogg", "de");
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    await sendMessage({
+      chat_id: chatId,
+      text: `⚠️ Transkription fehlgeschlagen: ${message.slice(0, 240)}`,
+      reply_to_message_id: messageId,
+    });
+    return { ok: true, action: "voice:transcribe_error", detail: message };
+  }
+
+  if (!transcript) {
+    await sendMessage({
+      chat_id: chatId,
+      text: "🎙️ Whisper konnte nichts erkennen — leerer Transkript.",
+      reply_to_message_id: messageId,
+    });
+    return { ok: true, action: "voice:empty_transcript" };
+  }
+
+  // Echo the transcript back so Jan sees what landed; trim aggressively
+  // for the inline preview, full text goes into the comment.
+  const preview = transcript.length > 240 ? `${transcript.slice(0, 240)}…` : transcript;
+  await sendMessage({
+    chat_id: chatId,
+    text: `🎙️ Transkribiert: _${preview}_`,
+    parse_mode: "Markdown",
+    reply_to_message_id: messageId,
+  });
+
+  // Treat the transcript as if Jan had typed it.
+  return handleTextReply({
+    telegramUserId,
+    chatId,
+    messageId,
+    text: transcript,
+    config,
+  });
 }

@@ -127,10 +127,18 @@ flip the issue status (`in_progress` / `cancelled` / `backlog`); they
 appear on messages the bot itself produces (e.g. an enriched `/inbox`
 output in a later slice).
 
-### Voice (planned)
+### Voice
 
-Voice notes will land via Whisper transcription in a follow-up slice
-(currently stubbed).
+Telegram voice messages get downloaded, sent to OpenAI Whisper
+(`whisper-1`), and the transcript is treated as if Jan had typed it
+(routed via the same active-context-or-tag flow as text). The bot
+echoes the transcript back as a `🎙️ Transkribiert: …` preview so Jan
+can sanity-check what landed before any follow-up reply.
+
+Requires `OPENAI_API_KEY` in Vercel-Env. Without it, voice messages
+get a friendly "not configured" reply. Hard cap of 5 min per voice
+message (Whisper is fine with longer, but the latency / cost gets
+silly for chat use).
 
 ### Whitelist
 

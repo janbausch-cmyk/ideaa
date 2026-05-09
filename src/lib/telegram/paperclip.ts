@@ -123,6 +123,21 @@ export async function patchIssue(
   });
 }
 
+export type GoalSummary = {
+  id: string;
+  title: string;
+  status: string;
+  level?: string;
+  parentId?: string | null;
+};
+
+export async function listCompanyGoals(): Promise<GoalSummary[]> {
+  const res = await call<GoalSummary[] | { goals: GoalSummary[] }>(
+    `/api/companies/${getCompanyId()}/goals`,
+  );
+  return Array.isArray(res) ? res : res.goals;
+}
+
 export async function createIssue(input: {
   title: string;
   description?: string;

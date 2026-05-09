@@ -10,6 +10,7 @@ import {
   createIssue,
   getIssue,
   listAssignedToUser,
+  listCompanyGoals,
 } from "./paperclip";
 import { getTelegramConfig, paperclipIssueUrl } from "./config";
 
@@ -60,9 +61,9 @@ async function cmdHelp(args: {
     "Befehle:",
     "• `/inbox` — deine offenen Paperclip-Aufgaben",
     "• `/status` — kurzer Health-Check der Bridge",
-    "• `/new <titel>` — neues Issue anlegen (erbt das Goal vom letzten Push-Issue)",
+    "• `/new <titel>` — neues Issue anlegen (zugewiesen an dich, du delegierst weiter)",
     "",
-    "Sonst: Text-Antwort wird Kommentar auf dem zuletzt gepushten Issue. Mit `#IDEAA-XX` kannst du explizit ein Issue taggen.",
+    "Sonst: Text-Antwort wird Kommentar auf dem aktiven Issue. Mit `#IDEAA-XX` taggst du ein Issue, danach landen Folge-Antworten ohne Tag dort.",
   ];
   await sendMessage({
     chat_id: args.chatId,
@@ -210,7 +211,20 @@ async function cmdNew(args: {
     return { ok: true, action: "command:new:no_title" };
   }
 
-  // Resolve goal: env override → goal of last tagged-context issue → fail.
+  const chat = await getTelegramChat(args.telegramUserId);
+  if (!chat) {
+    await sendMessage({
+      chat_id: args.chatId,
+      text: "Kein Mapping zu einem Paperclip-User. Lass dich erst per `register-chat` registrieren.",
+      reply_to_message_id: args.messageId,
+    });
+    return { ok: true, action: "command:new:no_mapping" };
+  }
+
+  // Resolve goal in priority order:
+  //   1. TELEGRAM_NEW_DEFAULT_GOAL_ID env override
+  //   2. goal of the chat's active context issue
+  //   3. the company's only active goal (auto-default for single-goal companies)
   let goalId = process.env.TELEGRAM_NEW_DEFAULT_GOAL_ID ?? null;
   let parentId: string | null = null;
   if (!goalId) {
@@ -221,8 +235,19 @@ async function cmdNew(args: {
         goalId = ctxIssue.goalId ?? null;
         parentId = ctxIssue.parentId ?? null;
       } catch {
-        // fall through — no goal context, will report below
+        // fall through — no goal context, will try auto-default below
       }
+    }
+  }
+  if (!goalId) {
+    try {
+      const goals = await listCompanyGoals();
+      const active = goals.filter((g) => g.status === "active");
+      if (active.length === 1) {
+        goalId = active[0].id;
+      }
+    } catch {
+      // fall through — auto-default failed, will report below
     }
   }
 
@@ -237,8 +262,11 @@ async function cmdNew(args: {
     return { ok: true, action: "command:new:no_goal" };
   }
 
-  const assigneeAgentId =
-    process.env.TELEGRAM_NEW_DEFAULT_ASSIGNEE_AGENT_ID ?? undefined;
+  // Assign new issue to the chat user (not an agent), so the bot can
+  // continue to comment/edit it from the chat. The user delegates to an
+  // agent themselves later via the web UI or by tagging in a comment.
+  // Paperclip's permission model rejects an "outside" agent posting
+  // comments on an issue assigned to a different agent.
 
   try {
     const config = getTelegramConfig();
@@ -246,7 +274,7 @@ async function cmdNew(args: {
       title: args.title,
       goalId,
       parentId: parentId ?? undefined,
-      assigneeAgentId,
+      assigneeUserId: chat.paperclip_user_id,
     });
     // Pin the new issue as the chat's active context so a follow-up text
     // reply lands on it without needing a #-tag.
@@ -258,7 +286,10 @@ async function cmdNew(args: {
     );
     await sendMessage({
       chat_id: args.chatId,
-      text: `✅ Angelegt: *${issue.identifier}* — ${issue.title}\n${link}`,
+      text:
+        `✅ Angelegt: *${issue.identifier}* — ${issue.title}\n` +
+        `Zugewiesen an dich. Im Web kannst du es an einen Agenten weiterreichen.\n` +
+        `${link}`,
       parse_mode: "Markdown",
       disable_web_page_preview: true,
       reply_to_message_id: args.messageId,

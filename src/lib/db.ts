@@ -43,6 +43,15 @@ export async function ensureSchema(): Promise<void> {
       await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS analysis_tool_trace jsonb`;
       await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS admin_note text`;
       await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS tags text[] NOT NULL DEFAULT '{}'`;
+      await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS deepdive_status text NOT NULL DEFAULT 'idle'`;
+      await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS deepdive_report text`;
+      await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS deepdive_started_at timestamptz`;
+      await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS deepdive_finished_at timestamptz`;
+      await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS deepdive_error text`;
+      await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS deepdive_tool_trace jsonb`;
+      await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS deepdive_input_tokens int`;
+      await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS deepdive_output_tokens int`;
+      await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS deepdive_model text`;
       // Migrate legacy status names to the new vocabulary. Idempotent.
       await sql`UPDATE ideas SET status = 'done' WHERE status = 'ready'`;
       await sql`
@@ -80,6 +89,8 @@ export type ToolTraceEntry =
       error?: string;
     };
 
+export type DeepdiveStatus = "idle" | "queued" | "running" | "done" | "failed";
+
 export type IdeaRow = {
   id: string;
   raw_text: string;
@@ -93,12 +104,24 @@ export type IdeaRow = {
   analysis_tool_trace: ToolTraceEntry[] | null;
   admin_note: string | null;
   tags: string[];
+  deepdive_status: string;
+  deepdive_report: string | null;
+  deepdive_started_at: string | null;
+  deepdive_finished_at: string | null;
+  deepdive_error: string | null;
+  deepdive_tool_trace: ToolTraceEntry[] | null;
+  deepdive_input_tokens: number | null;
+  deepdive_output_tokens: number | null;
+  deepdive_model: string | null;
 };
 
 const IDEA_COLUMNS = `
   id, raw_text, status, created_at, updated_at,
   analysis_report, analysis_error, analysis_started_at, analysis_finished_at,
-  analysis_tool_trace, admin_note, tags
+  analysis_tool_trace, admin_note, tags,
+  deepdive_status, deepdive_report, deepdive_started_at, deepdive_finished_at,
+  deepdive_error, deepdive_tool_trace,
+  deepdive_input_tokens, deepdive_output_tokens, deepdive_model
 `;
 
 export async function insertIdea(rawText: string): Promise<IdeaRow> {
@@ -397,6 +420,83 @@ export async function adminUpdateIdea(
     RETURNING ${sql.unsafe(IDEA_COLUMNS)}
   `) as IdeaRow[];
   return rows[0] ?? null;
+}
+
+// --- Deepdive (Ausarbeitung) ---------------------------------------------
+
+const DEEPDIVE_STALE_AFTER_SECONDS = 600;
+
+/**
+ * Atomically transitions a deepdive into 'running' state. Returns the row
+ * iff it was claimed. A row is claimable when status is idle/done/failed
+ * (fresh kick-off or re-run), or when it's been stuck in queued/running for
+ * longer than the stale window (worker process died mid-flight).
+ */
+export async function claimDeepdive(id: string): Promise<IdeaRow | null> {
+  if (!isValidIdeaId(id)) return null;
+  await ensureSchema();
+  const sql = getSql();
+  const rows = (await sql`
+    UPDATE ideas
+    SET deepdive_status = 'running',
+        deepdive_started_at = now(),
+        deepdive_finished_at = NULL,
+        deepdive_error = NULL,
+        updated_at = now()
+    WHERE id = ${id}::uuid
+      AND (
+        deepdive_status IN ('idle', 'done', 'failed')
+        OR (
+          deepdive_status IN ('queued', 'running')
+          AND deepdive_started_at IS NOT NULL
+          AND deepdive_started_at < now() - (${DEEPDIVE_STALE_AFTER_SECONDS} || ' seconds')::interval
+        )
+      )
+    RETURNING ${sql.unsafe(IDEA_COLUMNS)}
+  `) as IdeaRow[];
+  return rows[0] ?? null;
+}
+
+export async function saveDeepdiveReady(
+  id: string,
+  report: string,
+  toolTrace: ToolTraceEntry[] | null,
+  usage: { input_tokens: number | null; output_tokens: number | null; model: string | null },
+): Promise<void> {
+  if (!isValidIdeaId(id)) return;
+  await ensureSchema();
+  const sql = getSql();
+  const traceJson = toolTrace ? JSON.stringify(toolTrace) : null;
+  await sql`
+    UPDATE ideas
+    SET deepdive_status = 'done',
+        deepdive_report = ${report},
+        deepdive_error = NULL,
+        deepdive_tool_trace = ${traceJson}::jsonb,
+        deepdive_finished_at = now(),
+        deepdive_input_tokens = ${usage.input_tokens},
+        deepdive_output_tokens = ${usage.output_tokens},
+        deepdive_model = ${usage.model},
+        updated_at = now()
+    WHERE id = ${id}::uuid
+  `;
+}
+
+export async function saveDeepdiveFailed(
+  id: string,
+  errorMessage: string,
+): Promise<void> {
+  if (!isValidIdeaId(id)) return;
+  await ensureSchema();
+  const sql = getSql();
+  await sql`
+    UPDATE ideas
+    SET deepdive_status = 'failed',
+        deepdive_error = ${errorMessage},
+        deepdive_finished_at = now(),
+        updated_at = now()
+    WHERE id = ${id}::uuid
+  `;
 }
 
 export async function adminDeleteIdea(id: string): Promise<boolean> {

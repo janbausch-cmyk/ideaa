@@ -1,11 +1,15 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 import { getIdea, isValidIdeaId } from "@/lib/db";
 
 import DeleteIdeaButton from "./DeleteIdeaButton";
+import DeepdiveRefresh from "./DeepdiveRefresh";
 import {
+  deepdiveAction,
   reanalyzeAction,
   setNoteAction,
   setStatusAction,
@@ -31,6 +35,19 @@ const FLASH_MESSAGES: Record<string, { tone: "ok" | "error"; text: string }> = {
       "Re-Analyse wurde gestartet. Aktualisiere die Seite in einigen Sekunden, um Fortschritt zu sehen.",
   },
   invalid_status: { tone: "error", text: "Ungültiger Status." },
+  deepdive_started: {
+    tone: "ok",
+    text:
+      "Ausarbeitung wurde gestartet. Die Seite aktualisiert sich automatisch, sobald das Dokument fertig ist (~60–120s).",
+  },
+};
+
+const DEEPDIVE_STATUS_LABELS: Record<string, string> = {
+  idle: "Noch nicht ausgearbeitet",
+  queued: "In Warteschlange",
+  running: "Wird ausgearbeitet…",
+  done: "Fertig",
+  failed: "Fehlgeschlagen",
 };
 
 function formatTimestamp(iso: string | null): string {
@@ -285,7 +302,105 @@ export default async function AdminIdeaDetailPage({
           </pre>
         </section>
       )}
+
+      <DeepdiveSection idea={idea} />
     </div>
+  );
+}
+
+function DeepdiveSection({ idea }: { idea: Awaited<ReturnType<typeof getIdea>> }) {
+  if (!idea) return null;
+  const ddStatus = idea.deepdive_status ?? "idle";
+  const isRunning = ddStatus === "queued" || ddStatus === "running";
+  const hasReport = !!idea.deepdive_report;
+  const buttonLabel = hasReport
+    ? "Neu ausarbeiten (überschreibt)"
+    : "Idee ausarbeiten";
+  const totalTokens =
+    (idea.deepdive_input_tokens ?? 0) + (idea.deepdive_output_tokens ?? 0);
+
+  return (
+    <section className="surface-card space-y-4 p-5">
+      <DeepdiveRefresh active={isRunning} />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="eyebrow">Ausarbeitung</h2>
+          <p className="mt-1 text-sm text-[color:var(--foreground-muted)]">
+            Tieferer Pass über die Validierung hinaus: Zielkunde, Wettbewerb,
+            MVP-Skizze, GTM-Wedge, 30/60/90-Plan, Risiken.
+          </p>
+          <p className="mt-2 inline-flex items-center gap-2 text-xs text-[color:var(--foreground-muted)]">
+            <span
+              className={
+                "h-2 w-2 rounded-full " +
+                (ddStatus === "done"
+                  ? "bg-emerald-500"
+                  : ddStatus === "running"
+                    ? "bg-amber-500 animate-pulse"
+                    : ddStatus === "queued"
+                      ? "bg-amber-300 animate-pulse"
+                      : ddStatus === "failed"
+                        ? "bg-rose-500"
+                        : "bg-zinc-400 dark:bg-zinc-500")
+              }
+              aria-hidden
+            />
+            <span>
+              <strong className="font-semibold text-[color:var(--foreground)]">
+                {DEEPDIVE_STATUS_LABELS[ddStatus] ?? ddStatus}
+              </strong>
+              {idea.deepdive_finished_at ? (
+                <>
+                  {" "}
+                  · zuletzt am {formatTimestamp(idea.deepdive_finished_at)}
+                </>
+              ) : null}
+              {totalTokens > 0 ? (
+                <>
+                  {" "}
+                  · {totalTokens.toLocaleString("de-DE")} Tokens
+                  {idea.deepdive_model ? <> ({idea.deepdive_model})</> : null}
+                </>
+              ) : null}
+            </span>
+          </p>
+        </div>
+        <form action={deepdiveAction}>
+          <input type="hidden" name="id" value={idea.id} />
+          <button
+            type="submit"
+            disabled={isRunning}
+            className="rounded-full bg-[color:var(--brand-ink)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isRunning ? "Wird ausgearbeitet…" : buttonLabel}
+          </button>
+        </form>
+      </div>
+
+      {idea.deepdive_error ? (
+        <div className="rounded-xl border border-rose-300/70 bg-rose-50 p-3 text-sm text-rose-900 dark:border-rose-700/40 dark:bg-rose-950/40 dark:text-rose-200">
+          <strong className="font-semibold">Fehler:</strong>{" "}
+          <span className="font-mono text-xs">{idea.deepdive_error}</span>
+        </div>
+      ) : null}
+
+      {hasReport ? (
+        <article className="analysis-report">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {idea.deepdive_report ?? ""}
+          </ReactMarkdown>
+        </article>
+      ) : isRunning ? (
+        <div className="rounded-xl border border-amber-300/70 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
+          Die Ausarbeitung läuft (typisch 60–120s, inkl. Web-Recherche). Diese
+          Seite aktualisiert sich automatisch.
+        </div>
+      ) : (
+        <div className="rounded-xl border border-dashed border-[color:var(--border)] bg-[color:var(--surface-muted)] p-4 text-sm text-[color:var(--foreground-muted)]">
+          Klick auf <em>Idee ausarbeiten</em>, um den tieferen Pass zu starten.
+        </div>
+      )}
+    </section>
   );
 }
 

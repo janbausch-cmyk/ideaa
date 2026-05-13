@@ -12,6 +12,7 @@ import {
   isValidIdeaId,
 } from "@/lib/db";
 import { processIdeaById } from "@/lib/worker";
+import { startDeepdiveForId } from "@/lib/deepdive";
 
 async function assertAdminOrRedirect() {
   if (!(await isAdminAuthenticated())) {
@@ -80,6 +81,35 @@ export async function reanalyzeAction(formData: FormData): Promise<void> {
   revalidatePath(`/admin/ideas/${id}`);
   revalidatePath("/admin/ideas");
   redirect(`/admin/ideas/${id}?ok=reanalyze`);
+}
+
+export async function deepdiveAction(formData: FormData): Promise<void> {
+  await assertAdminOrRedirect();
+  const id = (formData.get("id") ?? "").toString();
+  if (!isValidIdeaId(id)) redirect("/admin/ideas");
+  const sql = getSql();
+  // Mark as queued immediately so the UI flips into loading state on the next
+  // render. The actual claim → running transition happens inside
+  // startDeepdiveForId via claimDeepdive (atomic).
+  await sql`
+    UPDATE ideas
+    SET deepdive_status = 'queued',
+        deepdive_started_at = now(),
+        deepdive_finished_at = NULL,
+        deepdive_error = NULL,
+        updated_at = now()
+    WHERE id = ${id}::uuid
+      AND deepdive_status NOT IN ('running')
+  `;
+  after(async () => {
+    try {
+      await startDeepdiveForId(id);
+    } catch (err) {
+      console.error("[deepdiveAction] runner failed", err);
+    }
+  });
+  revalidatePath(`/admin/ideas/${id}`);
+  redirect(`/admin/ideas/${id}?ok=deepdive_started`);
 }
 
 export async function deleteIdeaAction(formData: FormData): Promise<void> {

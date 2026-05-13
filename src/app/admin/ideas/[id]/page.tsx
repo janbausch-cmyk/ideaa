@@ -38,7 +38,7 @@ const FLASH_MESSAGES: Record<string, { tone: "ok" | "error"; text: string }> = {
   deepdive_started: {
     tone: "ok",
     text:
-      "Ausarbeitung wurde gestartet. Die Seite aktualisiert sich automatisch, sobald das Dokument fertig ist (~60–120s).",
+      "Ausarbeitung wurde gestartet. Die Seite aktualisiert sich automatisch, sobald das Dokument fertig ist (~30–60s).",
   },
 };
 
@@ -392,7 +392,7 @@ function DeepdiveSection({ idea }: { idea: Awaited<ReturnType<typeof getIdea>> }
         </article>
       ) : isRunning ? (
         <div className="rounded-xl border border-amber-300/70 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
-          Die Ausarbeitung läuft (typisch 60–120s, inkl. Web-Recherche). Diese
+          Die Ausarbeitung läuft (typisch 30–60s, inkl. Web-Recherche). Diese
           Seite aktualisiert sich automatisch.
         </div>
       ) : (

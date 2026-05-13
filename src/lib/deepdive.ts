@@ -11,9 +11,9 @@ import {
   type ToolTraceEntry,
 } from "./db";
 
-const DEEPDIVE_MODEL = "claude-opus-4-7";
+const DEEPDIVE_MODEL = "claude-sonnet-4-6";
 const MAX_TOKENS = 4500;
-const MAX_SEARCHES = 12;
+const MAX_SEARCHES = 8;
 
 let cachedClient: Anthropic | null = null;
 

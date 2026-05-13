@@ -10,7 +10,7 @@ Detect the language of the idea in the \`## INPUT\` block. Write your ENTIRE res
 
 ## Tool use — web_search (REQUIRED for §1 and §2)
 
-You have a \`web_search\` tool. Use it BEFORE writing §1 (Markt & Zielgruppe — at least one market sizing search to ground numbers) and §2 (Wettbewerb — one search per named competitor to ground the URL and one-liner). Aim for 6–10 total searches.
+You have a \`web_search\` tool. Use it BEFORE writing §1 (Markt & Zielgruppe — at least one market sizing search to ground numbers) and §2 (Wettbewerb — one search per named competitor to ground the URL and one-liner). Aim for 5–7 total searches — be sparing, every search costs 4–6 seconds of latency.
 
 For competitor entries in §2 use exactly this format:
 \`[Product Name](https://canonical-url) — one-sentence what-it-does. **Lücke für uns:** <one specific gap they leave on the table>.\`

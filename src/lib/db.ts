@@ -65,6 +65,20 @@ export async function ensureSchema(): Promise<void> {
         WHERE status = 'processing' AND analysis_started_at IS NULL
       `;
       await sql`CREATE INDEX IF NOT EXISTS ideas_status_created_at_idx ON ideas (status, created_at)`;
+
+      await sql`
+        CREATE TABLE IF NOT EXISTS weekly_platform_reports (
+          id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          week_start_at timestamptz NOT NULL,
+          body          text NOT NULL,
+          tool_trace    jsonb,
+          input_tokens  int,
+          output_tokens int,
+          model         text,
+          created_at    timestamptz NOT NULL DEFAULT now()
+        )
+      `;
+      await sql`CREATE INDEX IF NOT EXISTS weekly_platform_reports_week_start_at_idx ON weekly_platform_reports (week_start_at DESC)`;
     })().catch((err) => {
       schemaReady = null;
       throw err;
@@ -497,6 +511,81 @@ export async function saveDeepdiveFailed(
         updated_at = now()
     WHERE id = ${id}::uuid
   `;
+}
+
+// --- Weekly platform-positioning reports ---------------------------------
+
+export type WeeklyPlatformReportRow = {
+  id: string;
+  week_start_at: string;
+  body: string;
+  tool_trace: ToolTraceEntry[] | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  model: string | null;
+  created_at: string;
+};
+
+const WEEKLY_REPORT_COLUMNS = `
+  id::text AS id, week_start_at, body, tool_trace,
+  input_tokens, output_tokens, model, created_at
+`;
+
+export async function insertWeeklyPlatformReport(args: {
+  weekStartAt: Date;
+  body: string;
+  toolTrace: ToolTraceEntry[] | null;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  model: string | null;
+}): Promise<WeeklyPlatformReportRow> {
+  await ensureSchema();
+  const sql = getSql();
+  const traceJson = args.toolTrace ? JSON.stringify(args.toolTrace) : null;
+  const rows = (await sql`
+    INSERT INTO weekly_platform_reports
+      (week_start_at, body, tool_trace, input_tokens, output_tokens, model)
+    VALUES (
+      ${args.weekStartAt.toISOString()},
+      ${args.body},
+      ${traceJson}::jsonb,
+      ${args.inputTokens},
+      ${args.outputTokens},
+      ${args.model}
+    )
+    RETURNING ${sql.unsafe(WEEKLY_REPORT_COLUMNS)}
+  `) as WeeklyPlatformReportRow[];
+  return rows[0];
+}
+
+export async function listRecentWeeklyPlatformReports(
+  limit = 4,
+): Promise<WeeklyPlatformReportRow[]> {
+  await ensureSchema();
+  const sql = getSql();
+  const safeLimit = Math.min(Math.max(limit, 1), 52);
+  const rows = (await sql`
+    SELECT ${sql.unsafe(WEEKLY_REPORT_COLUMNS)}
+    FROM weekly_platform_reports
+    ORDER BY week_start_at DESC, created_at DESC
+    LIMIT ${safeLimit}
+  `) as WeeklyPlatformReportRow[];
+  return rows;
+}
+
+export async function getWeeklyPlatformReport(
+  id: string,
+): Promise<WeeklyPlatformReportRow | null> {
+  if (!UUID_RE.test(id)) return null;
+  await ensureSchema();
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT ${sql.unsafe(WEEKLY_REPORT_COLUMNS)}
+    FROM weekly_platform_reports
+    WHERE id = ${id}::uuid
+    LIMIT 1
+  `) as WeeklyPlatformReportRow[];
+  return rows[0] ?? null;
 }
 
 export async function adminDeleteIdea(id: string): Promise<boolean> {

@@ -46,6 +46,12 @@ export default async function AdminLayout({
                 >
                   Ideen
                 </Link>
+                <Link
+                  href="/admin/platform-reports"
+                  className="rounded-full px-3 py-1.5 font-medium text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-muted)]"
+                >
+                  Plattform-Berichte
+                </Link>
                 <a
                   href="/api/admin/export?format=json"
                   className="rounded-full px-3 py-1.5 font-medium text-[color:var(--foreground-muted)] transition hover:bg-[color:var(--surface-muted)] hover:text-[color:var(--foreground)]"

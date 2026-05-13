@@ -113,7 +113,7 @@ export async function analyzeClaimedIdea(idea: IdeaRow): Promise<void> {
       messages: [
         {
           role: "user",
-          content: `## INPUT\n${idea.raw_text}\n\n## OUTPUT\n`,
+          content: `## INPUT\n${idea.raw_text}\n\n## OUTPUT\n\nReminder: respond in the same language as the INPUT above (see the Language hard rule in the system prompt). If the INPUT is German, the entire OUTPUT below — including translated section headings — must be in German.\n`,
         },
       ],
     });

@@ -13,30 +13,48 @@ export default async function AdminLayout({
 }) {
   const authenticated = await isAdminAuthenticated();
   return (
-    <div className="min-h-full bg-neutral-50 text-neutral-900">
-      <header className="border-b border-neutral-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-4">
+    <div className="min-h-full bg-[color:var(--background)] text-[color:var(--foreground)]">
+      <header className="sticky top-0 z-20 border-b border-[color:var(--border)] bg-[color:var(--surface)]/85 backdrop-blur supports-[backdrop-filter]:bg-[color:var(--surface)]/70">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+          <div className="flex items-center gap-5">
             <Link
               href="/admin/ideas"
-              className="font-semibold tracking-tight text-neutral-900"
+              className="flex items-center gap-2 font-bold tracking-tight"
             >
-              IDEAA · Admin
+              <span
+                aria-hidden
+                className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold text-white"
+                style={{
+                  background:
+                    "linear-gradient(120deg, var(--brand-from), var(--brand-via), var(--brand-to))",
+                }}
+              >
+                I
+              </span>
+              <span>
+                <span className="brand-wordmark">IDEAA</span>
+                <span className="ml-1.5 text-xs font-medium uppercase tracking-wider text-[color:var(--foreground-muted)]">
+                  Admin
+                </span>
+              </span>
             </Link>
             {authenticated ? (
-              <nav className="flex items-center gap-3 text-sm text-neutral-600">
-                <Link href="/admin/ideas" className="hover:text-neutral-900">
+              <nav className="hidden items-center gap-1 text-sm sm:flex">
+                <Link
+                  href="/admin/ideas"
+                  className="rounded-full px-3 py-1.5 font-medium text-[color:var(--foreground)] transition hover:bg-[color:var(--surface-muted)]"
+                >
                   Ideen
                 </Link>
                 <a
                   href="/api/admin/export?format=json"
-                  className="hover:text-neutral-900"
+                  className="rounded-full px-3 py-1.5 font-medium text-[color:var(--foreground-muted)] transition hover:bg-[color:var(--surface-muted)] hover:text-[color:var(--foreground)]"
                 >
                   Export JSON
                 </a>
                 <a
                   href="/api/admin/export?format=csv"
-                  className="hover:text-neutral-900"
+                  className="rounded-full px-3 py-1.5 font-medium text-[color:var(--foreground-muted)] transition hover:bg-[color:var(--surface-muted)] hover:text-[color:var(--foreground)]"
                 >
                   Export CSV
                 </a>
@@ -44,14 +62,17 @@ export default async function AdminLayout({
             ) : null}
           </div>
           <div className="flex items-center gap-3 text-sm">
-            <Link href="/" className="text-neutral-600 hover:text-neutral-900">
+            <Link
+              href="/"
+              className="hidden text-[color:var(--foreground-muted)] transition hover:text-[color:var(--brand-ink)] sm:inline"
+            >
               ← Zur Startseite
             </Link>
             {authenticated ? <LogoutButton /> : null}
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
         {children}
       </main>
     </div>

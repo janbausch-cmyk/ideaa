@@ -5,7 +5,7 @@ export default function LogoutButton() {
     <form action={logoutAction}>
       <button
         type="submit"
-        className="rounded border border-neutral-300 bg-white px-3 py-1 text-sm text-neutral-700 hover:bg-neutral-100"
+        className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-3 py-1.5 text-xs font-medium text-[color:var(--foreground)] shadow-sm transition hover:border-[color:var(--brand-ink)]/40 hover:text-[color:var(--brand-ink)]"
       >
         Abmelden
       </button>

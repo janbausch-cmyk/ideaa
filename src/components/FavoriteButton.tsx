@@ -26,10 +26,10 @@ export default function FavoriteButton({ id }: { id: string }) {
       aria-pressed={active}
       aria-label={active ? "Remove from favorites" : "Save as good"}
       className={
-        "no-print inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition " +
+        "no-print inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium shadow-sm transition " +
         (active
-          ? "border-amber-400 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-500 dark:bg-amber-950 dark:text-amber-200"
-          : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800")
+          ? "border-amber-400/70 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-500/60 dark:bg-amber-950/50 dark:text-amber-200"
+          : "border-[color:var(--border)] bg-[color:var(--surface)] text-[color:var(--foreground)] hover:border-[color:var(--brand-ink)]/40 hover:text-[color:var(--brand-ink)]")
       }
     >
       <svg

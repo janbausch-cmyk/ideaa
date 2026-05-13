@@ -65,29 +65,45 @@ export default async function AdminIdeaDetailPage({
       ? FLASH_MESSAGES[errorKey]
       : null;
 
+  const statusTone =
+    idea.status === "done"
+      ? "bg-emerald-500"
+      : idea.status === "running"
+        ? "bg-amber-500 animate-pulse"
+        : idea.status === "failed"
+          ? "bg-rose-500"
+          : "bg-zinc-400 dark:bg-zinc-500";
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <Link
             href="/admin/ideas"
-            className="text-sm text-neutral-500 hover:text-neutral-800"
+            className="inline-flex items-center gap-1 text-sm font-medium text-[color:var(--foreground-muted)] transition hover:text-[color:var(--brand-ink)]"
           >
-            ← Zurück zur Liste
+            <span aria-hidden>←</span> Zurück zur Liste
           </Link>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-            Idee #{idea.id.slice(0, 8)}
-          </h1>
-          <p className="text-sm text-neutral-600">
-            Status:{" "}
-            <strong>{STATUS_LABELS[idea.status] ?? idea.status}</strong> ·
-            Erstellt {formatTimestamp(idea.created_at)}
+          <div className="mt-2 flex flex-wrap items-baseline gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">Idee</h1>
+            <code className="rounded-md bg-[color:var(--surface-muted)] px-2 py-0.5 font-mono text-xs text-[color:var(--foreground-muted)]">
+              #{idea.id.slice(0, 8)}
+            </code>
+          </div>
+          <p className="mt-1 inline-flex items-center gap-2 text-sm text-[color:var(--foreground-muted)]">
+            <span className={"h-2 w-2 rounded-full " + statusTone} aria-hidden />
+            <span>
+              <strong className="font-semibold text-[color:var(--foreground)]">
+                {STATUS_LABELS[idea.status] ?? idea.status}
+              </strong>{" "}
+              · Erstellt {formatTimestamp(idea.created_at)}
+            </span>
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href={`/ideas/${idea.id}`}
-            className="rounded border border-neutral-300 bg-white px-3 py-1.5 text-sm hover:bg-neutral-100"
+            className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-3.5 py-1.5 text-sm font-medium shadow-sm transition hover:border-[color:var(--brand-ink)]/40 hover:text-[color:var(--brand-ink)]"
           >
             Öffentliche Ansicht ↗
           </Link>
@@ -95,7 +111,7 @@ export default async function AdminIdeaDetailPage({
             href={`/api/admin/analyze/${idea.id}`}
             target="_blank"
             rel="noreferrer"
-            className="rounded border border-neutral-300 bg-white px-3 py-1.5 text-sm hover:bg-neutral-100"
+            className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-3.5 py-1.5 text-sm font-medium shadow-sm transition hover:border-[color:var(--brand-ink)]/40 hover:text-[color:var(--brand-ink)]"
           >
             Trace JSON ↗
           </a>
@@ -105,30 +121,26 @@ export default async function AdminIdeaDetailPage({
       {flash && (
         <div
           className={
-            "rounded border p-3 text-sm " +
+            "rounded-xl border p-3 text-sm " +
             (flash.tone === "ok"
-              ? "border-emerald-300 bg-emerald-50 text-emerald-900"
-              : "border-rose-300 bg-rose-50 text-rose-900")
+              ? "border-emerald-300/70 bg-emerald-50 text-emerald-900 dark:border-emerald-700/40 dark:bg-emerald-950/40 dark:text-emerald-200"
+              : "border-rose-300/70 bg-rose-50 text-rose-900 dark:border-rose-700/40 dark:bg-rose-950/40 dark:text-rose-200")
           }
         >
           {flash.text}
         </div>
       )}
 
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="rounded border border-neutral-200 bg-white p-4 lg:col-span-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
-            Originaltext
-          </h2>
-          <pre className="mt-2 whitespace-pre-wrap break-words font-sans text-sm text-neutral-900">
+      <section className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <div className="surface-card p-5 lg:col-span-2">
+          <h2 className="eyebrow">Originaltext</h2>
+          <pre className="mt-3 whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-[color:var(--foreground)]">
             {idea.raw_text}
           </pre>
         </div>
-        <div className="space-y-3 rounded border border-neutral-200 bg-white p-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
-            Metadaten
-          </h2>
-          <dl className="space-y-1 text-sm">
+        <div className="surface-card p-5">
+          <h2 className="eyebrow">Metadaten</h2>
+          <dl className="mt-3 space-y-1.5 text-sm">
             <Meta label="ID" value={<code className="text-xs">{idea.id}</code>} />
             <Meta
               label="Status"
@@ -160,69 +172,70 @@ export default async function AdminIdeaDetailPage({
       </section>
 
       {idea.analysis_error && (
-        <section className="rounded border border-rose-300 bg-rose-50 p-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-rose-700">
+        <section className="surface-card border-rose-300/70 bg-rose-50/70 p-5 dark:border-rose-700/40 dark:bg-rose-950/40">
+          <h2 className="eyebrow !text-rose-700 dark:!text-rose-300">
             Fehlermeldung
           </h2>
-          <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-xs text-rose-900">
+          <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-xs text-rose-900 dark:text-rose-200">
             {idea.analysis_error}
           </pre>
         </section>
       )}
 
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <section className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <form
           action={setNoteAction}
-          className="space-y-3 rounded border border-neutral-200 bg-white p-4"
+          className="surface-card space-y-3 p-5"
         >
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
-            Notiz & Tags
-          </h2>
+          <h2 className="eyebrow">Notiz & Tags</h2>
           <input type="hidden" name="id" value={idea.id} />
           <label className="block text-sm">
-            <span className="text-neutral-700">Notiz</span>
+            <span className="font-medium text-[color:var(--foreground)]">
+              Notiz
+            </span>
             <textarea
               name="note"
               defaultValue={idea.admin_note ?? ""}
               rows={5}
               maxLength={4000}
-              className="mt-1 block w-full rounded border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-neutral-500 focus:outline-none"
+              className="mt-1 block w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-3 py-2 text-sm shadow-inner focus:border-[color:var(--brand-ink)]/60 focus:outline-none focus:ring-2 focus:ring-[color:var(--brand-ink)]/20"
               placeholder="Interne Notiz für das Team…"
             />
           </label>
           <label className="block text-sm">
-            <span className="text-neutral-700">
+            <span className="font-medium text-[color:var(--foreground)]">
               Tags (durch Komma getrennt)
             </span>
             <input
               type="text"
               name="tags"
               defaultValue={idea.tags.join(", ")}
-              className="mt-1 block w-full rounded border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-neutral-500 focus:outline-none"
+              className="mt-1 block w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-3 py-2 text-sm shadow-inner focus:border-[color:var(--brand-ink)]/60 focus:outline-none focus:ring-2 focus:ring-[color:var(--brand-ink)]/20"
               placeholder="z.B. saas, b2b, follow-up"
             />
           </label>
           <button
             type="submit"
-            className="rounded bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700"
+            className="brand-button inline-flex items-center rounded-full px-5 py-2 text-sm font-semibold"
           >
             Speichern
           </button>
         </form>
 
-        <div className="space-y-3 rounded border border-neutral-200 bg-white p-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
-            Aktionen
-          </h2>
+        <div className="surface-card space-y-3 p-5">
+          <h2 className="eyebrow">Aktionen</h2>
 
-          <form action={setStatusAction} className="flex flex-wrap items-center gap-2">
+          <form
+            action={setStatusAction}
+            className="flex flex-wrap items-center gap-2"
+          >
             <input type="hidden" name="id" value={idea.id} />
-            <label className="text-sm text-neutral-700">
-              Status setzen:
+            <label className="flex items-center gap-2 text-sm font-medium text-[color:var(--foreground)]">
+              Status:
               <select
                 name="status"
                 defaultValue={idea.status}
-                className="ml-2 rounded border border-neutral-300 px-2 py-1 text-sm"
+                className="rounded-lg border border-[color:var(--border)] bg-[color:var(--surface)] px-2 py-1 text-sm focus:border-[color:var(--brand-ink)]/60 focus:outline-none focus:ring-2 focus:ring-[color:var(--brand-ink)]/20"
               >
                 {ALL_STATUSES.map((s) => (
                   <option key={s} value={s}>
@@ -233,9 +246,9 @@ export default async function AdminIdeaDetailPage({
             </label>
             <button
               type="submit"
-              className="rounded border border-neutral-300 bg-white px-3 py-1.5 text-sm hover:bg-neutral-100"
+              className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-3.5 py-1.5 text-sm font-medium shadow-sm transition hover:border-[color:var(--brand-ink)]/40 hover:text-[color:var(--brand-ink)]"
             >
-              Status anwenden
+              Anwenden
             </button>
           </form>
 
@@ -243,7 +256,7 @@ export default async function AdminIdeaDetailPage({
             <input type="hidden" name="id" value={idea.id} />
             <button
               type="submit"
-              className="w-full rounded border border-sky-300 bg-sky-50 px-3 py-2 text-sm text-sky-900 hover:bg-sky-100"
+              className="w-full rounded-xl border border-indigo-300/70 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-900 transition hover:bg-indigo-100 dark:border-indigo-700/40 dark:bg-indigo-950/40 dark:text-indigo-200"
             >
               Re-Analyse starten (Report wird verworfen)
             </button>
@@ -254,22 +267,20 @@ export default async function AdminIdeaDetailPage({
       </section>
 
       {idea.analysis_report && (
-        <section className="rounded border border-neutral-200 bg-white p-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
-            Analyse-Output (Markdown)
-          </h2>
-          <pre className="mt-2 max-h-[60vh] overflow-auto whitespace-pre-wrap break-words rounded bg-neutral-50 p-3 font-mono text-xs text-neutral-800">
+        <section className="surface-card p-5">
+          <h2 className="eyebrow">Analyse-Output (Markdown)</h2>
+          <pre className="mt-3 max-h-[60vh] overflow-auto whitespace-pre-wrap break-words rounded-xl bg-[color:var(--surface-muted)] p-4 font-mono text-xs text-[color:var(--foreground)]">
             {idea.analysis_report}
           </pre>
         </section>
       )}
 
       {idea.analysis_tool_trace && idea.analysis_tool_trace.length > 0 && (
-        <section className="rounded border border-neutral-200 bg-white p-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+        <section className="surface-card p-5">
+          <h2 className="eyebrow">
             Tool-Trace ({idea.analysis_tool_trace.length} Einträge)
           </h2>
-          <pre className="mt-2 max-h-[40vh] overflow-auto whitespace-pre-wrap break-words rounded bg-neutral-50 p-3 font-mono text-xs text-neutral-800">
+          <pre className="mt-3 max-h-[40vh] overflow-auto whitespace-pre-wrap break-words rounded-xl bg-[color:var(--surface-muted)] p-4 font-mono text-xs text-[color:var(--foreground)]">
             {JSON.stringify(idea.analysis_tool_trace, null, 2)}
           </pre>
         </section>
@@ -280,9 +291,11 @@ export default async function AdminIdeaDetailPage({
 
 function Meta({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex justify-between gap-2">
-      <dt className="text-neutral-500">{label}</dt>
-      <dd className="text-right text-neutral-900">{value}</dd>
+    <div className="flex justify-between gap-2 border-b border-[color:var(--border)] pb-1.5 last:border-b-0 last:pb-0">
+      <dt className="text-[color:var(--foreground-muted)]">{label}</dt>
+      <dd className="text-right font-medium text-[color:var(--foreground)]">
+        {value}
+      </dd>
     </div>
   );
 }

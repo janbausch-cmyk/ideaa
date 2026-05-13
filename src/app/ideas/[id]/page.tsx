@@ -87,7 +87,7 @@ export default async function IdeaPage({
   const isReady = status.tone === "ready";
 
   return (
-    <main className="flex min-h-screen flex-col items-center bg-zinc-50 px-6 py-16 font-sans dark:bg-black print:bg-white print:py-0">
+    <main className="app-backdrop flex min-h-screen flex-col items-center px-6 py-12 sm:py-16 print:bg-white print:py-0">
       {isProcessing ? (
         <meta httpEquiv="refresh" content="5" />
       ) : null}
@@ -97,17 +97,22 @@ export default async function IdeaPage({
         submittedAt={submittedAtIso}
       />
       <div className="flex w-full max-w-2xl flex-col gap-6">
-        <header className="flex flex-col gap-1">
+        <header className="flex flex-col gap-2">
           <Link
             href="/"
-            className="no-print text-sm text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+            className="no-print inline-flex w-fit items-center gap-1 text-sm font-medium text-[color:var(--foreground-muted)] transition hover:text-[color:var(--brand-ink)]"
           >
-            ← New idea
+            <span aria-hidden>←</span> New idea
           </Link>
-          <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">
-            Idea #{idea.id.slice(0, 8)}
-          </h1>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          <div className="flex flex-wrap items-baseline gap-3">
+            <h1 className="text-3xl font-bold tracking-tight text-[color:var(--foreground)] sm:text-4xl">
+              Idea
+            </h1>
+            <code className="rounded-md bg-[color:var(--surface-muted)] px-2 py-0.5 font-mono text-xs text-[color:var(--foreground-muted)]">
+              #{idea.id.slice(0, 8)}
+            </code>
+          </div>
+          <p className="text-xs text-[color:var(--foreground-muted)]">
             Submitted {submittedAt}
           </p>
         </header>
@@ -120,48 +125,46 @@ export default async function IdeaPage({
 
         <section
           className={
-            "flex flex-col gap-2 rounded-lg border p-4 " +
+            "surface-card flex flex-col gap-2 p-5 " +
             (status.tone === "ready"
-              ? "border-emerald-300 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950"
+              ? "ring-1 ring-emerald-300/60 dark:ring-emerald-800/50"
               : status.tone === "failed"
-                ? "border-red-300 bg-red-50 dark:border-red-900 dark:bg-red-950"
-                : "border-amber-300 bg-amber-50 dark:border-amber-900 dark:bg-amber-950")
+                ? "ring-1 ring-rose-300/60 dark:ring-rose-800/50"
+                : "ring-1 ring-amber-300/60 dark:ring-amber-800/50")
           }
         >
           <div className="flex items-center gap-2">
             <span
               className={
-                "inline-flex h-2 w-2 rounded-full " +
+                "inline-flex h-2.5 w-2.5 rounded-full " +
                 (status.tone === "ready"
                   ? "bg-emerald-500"
                   : status.tone === "failed"
-                    ? "bg-red-500"
+                    ? "bg-rose-500"
                     : "animate-pulse bg-amber-500")
               }
             />
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-700 dark:text-zinc-200">
-              Status: {status.label}
+            <h2 className="eyebrow !text-[color:var(--foreground)]">
+              Status — {status.label}
             </h2>
           </div>
-          <p className="text-sm text-zinc-700 dark:text-zinc-200">
+          <p className="text-sm text-[color:var(--foreground)]">
             {status.description}
           </p>
           {status.tone === "failed" && idea.analysis_error ? (
-            <p className="text-xs text-red-700 dark:text-red-300">
+            <p className="rounded-lg bg-rose-50 px-3 py-2 font-mono text-xs text-rose-800 dark:bg-rose-950/40 dark:text-rose-300">
               {idea.analysis_error}
             </p>
           ) : null}
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="text-xs text-[color:var(--foreground-muted)]">
             Bookmark or share this URL — it always shows the latest state for
             this idea.
           </p>
         </section>
 
-        <section className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-            Your idea
-          </h2>
-          <pre className="whitespace-pre-wrap break-words font-sans text-sm text-zinc-800 dark:text-zinc-100">
+        <section className="surface-card flex flex-col gap-2 p-5">
+          <h2 className="eyebrow">Your idea</h2>
+          <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-[color:var(--foreground)]">
             {idea.raw_text}
           </pre>
         </section>
@@ -171,22 +174,18 @@ export default async function IdeaPage({
               const { report, plan } = splitReportAndPlan(idea.analysis_report);
               return (
                 <>
-                  <section className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
-                    <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                      Validation report
-                    </h2>
-                    <article className="analysis-report text-sm">
+                  <section className="surface-card flex flex-col gap-3 p-6 sm:p-7">
+                    <h2 className="eyebrow">Validation report</h2>
+                    <article className="analysis-report">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {report}
                       </ReactMarkdown>
                     </article>
                   </section>
                   {plan ? (
-                    <section className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
-                      <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                        Implementation plan
-                      </h2>
-                      <article className="analysis-report text-sm">
+                    <section className="surface-card flex flex-col gap-3 p-6 sm:p-7">
+                      <h2 className="eyebrow">Implementation plan</h2>
+                      <article className="analysis-report">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                           {plan}
                         </ReactMarkdown>

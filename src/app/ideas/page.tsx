@@ -24,19 +24,19 @@ export default async function IdeasIndexPage({
   const submittedIds = parseIds(params.ids);
 
   return (
-    <main className="flex min-h-screen flex-col items-center bg-zinc-50 px-6 py-12 font-sans dark:bg-black">
+    <main className="app-backdrop flex min-h-screen flex-col items-center px-6 py-12 sm:py-16">
       <div className="flex w-full max-w-2xl flex-col gap-6">
-        <header className="flex flex-col gap-1">
+        <header className="flex flex-col gap-2">
           <Link
             href="/"
-            className="text-sm text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+            className="inline-flex w-fit items-center gap-1 text-sm font-medium text-[color:var(--foreground-muted)] transition hover:text-[color:var(--brand-ink)]"
           >
-            ← New idea
+            <span aria-hidden>←</span> New idea
           </Link>
-          <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">
+          <h1 className="text-3xl font-bold tracking-tight text-[color:var(--foreground)] sm:text-4xl">
             Your ideas
           </h1>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-[color:var(--foreground-muted)]">
             Status updates live every few seconds. Click any ready idea to
             open its report.
           </p>

@@ -1,45 +1,159 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fbfaf7;
+  --surface: #ffffff;
+  --surface-muted: #f4f2ec;
+  --foreground: #18181b;
+  --foreground-muted: #52525b;
+  --border: #e6e3dc;
+  --border-strong: #d5d1c7;
+  --brand-from: #6366f1;
+  --brand-via: #8b5cf6;
+  --brand-to: #ec4899;
+  --brand-ink: #4f46e5;
+  --shadow-soft: 0 1px 2px rgba(24, 24, 27, 0.04),
+    0 8px 24px -12px rgba(24, 24, 27, 0.08);
+  --shadow-lift: 0 1px 2px rgba(24, 24, 27, 0.05),
+    0 24px 48px -20px rgba(99, 102, 241, 0.18);
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
   --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-border-token: var(--border);
+  --color-brand: var(--brand-ink);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #08070b;
+    --surface: #111014;
+    --surface-muted: #17161c;
+    --foreground: #f4f4f5;
+    --foreground-muted: #a1a1aa;
+    --border: #26252b;
+    --border-strong: #3a3942;
+    --brand-from: #818cf8;
+    --brand-via: #a78bfa;
+    --brand-to: #f472b6;
+    --brand-ink: #a5b4fc;
+    --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.4),
+      0 8px 24px -12px rgba(0, 0, 0, 0.5);
+    --shadow-lift: 0 1px 2px rgba(0, 0, 0, 0.5),
+      0 24px 48px -20px rgba(129, 140, 248, 0.25);
   }
+}
+
+html {
+  font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: inherit;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-backdrop {
+  background:
+    radial-gradient(
+      circle at 12% -10%,
+      color-mix(in srgb, var(--brand-from) 14%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 92% 8%,
+      color-mix(in srgb, var(--brand-to) 12%, transparent),
+      transparent 50%
+    ),
+    var(--background);
+}
+
+.brand-wordmark {
+  background: linear-gradient(
+    100deg,
+    var(--brand-from) 0%,
+    var(--brand-via) 45%,
+    var(--brand-to) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.brand-button {
+  background: linear-gradient(
+    100deg,
+    var(--brand-from) 0%,
+    var(--brand-via) 50%,
+    var(--brand-to) 100%
+  );
+  color: #ffffff;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.16) inset,
+    0 8px 24px -12px color-mix(in srgb, var(--brand-via) 60%, transparent);
+  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+}
+.brand-button:hover {
+  filter: brightness(1.05);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.2) inset,
+    0 12px 28px -10px color-mix(in srgb, var(--brand-via) 70%, transparent);
+}
+.brand-button:active {
+  transform: translateY(1px);
+}
+.brand-button:disabled {
+  filter: grayscale(0.4);
+  opacity: 0.6;
+}
+
+.surface-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-soft);
+}
+.surface-card-flat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+}
+
+.eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--foreground-muted);
 }
 
 .analysis-report {
-  line-height: 1.6;
+  line-height: 1.65;
   color: var(--foreground);
+  font-size: 0.95rem;
 }
 .analysis-report h1 {
   font-size: 1.5rem;
   font-weight: 700;
+  letter-spacing: -0.01em;
   margin: 1.5rem 0 0.75rem;
 }
 .analysis-report h2 {
-  font-size: 1.15rem;
+  font-size: 1.125rem;
   font-weight: 700;
-  margin: 1.25rem 0 0.5rem;
-  border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent);
-  padding-top: 0.75rem;
+  letter-spacing: -0.005em;
+  margin: 1.5rem 0 0.5rem;
+  border-top: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+  padding-top: 0.85rem;
 }
 .analysis-report h2:first-child {
   border-top: none;
@@ -49,14 +163,14 @@ body {
 .analysis-report h3 {
   font-size: 1rem;
   font-weight: 600;
-  margin: 1rem 0 0.4rem;
+  margin: 1.1rem 0 0.4rem;
 }
 .analysis-report p {
-  margin: 0.5rem 0;
+  margin: 0.55rem 0;
 }
 .analysis-report ul,
 .analysis-report ol {
-  margin: 0.5rem 0 0.5rem 1.4rem;
+  margin: 0.55rem 0 0.55rem 1.4rem;
   padding-left: 0.25rem;
 }
 .analysis-report ul {
@@ -66,11 +180,16 @@ body {
   list-style: decimal;
 }
 .analysis-report li {
-  margin: 0.25rem 0;
+  margin: 0.3rem 0;
 }
 .analysis-report a {
-  color: #2563eb;
+  color: var(--brand-ink);
   text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+.analysis-report a:hover {
+  text-decoration-thickness: 2px;
 }
 .analysis-report code {
   font-family: var(--font-mono), ui-monospace, SFMono-Regular, monospace;
@@ -86,26 +205,26 @@ body {
   font-style: italic;
 }
 .analysis-report blockquote {
-  border-left: 3px solid color-mix(in srgb, currentColor 25%, transparent);
-  padding-left: 0.75rem;
-  margin: 0.75rem 0;
+  border-left: 3px solid color-mix(in srgb, var(--brand-via) 50%, transparent);
+  padding-left: 0.85rem;
+  margin: 0.85rem 0;
   color: color-mix(in srgb, currentColor 75%, transparent);
 }
 .analysis-report table {
   border-collapse: collapse;
-  margin: 0.75rem 0;
+  margin: 0.85rem 0;
   font-size: 0.9rem;
   width: 100%;
 }
 .analysis-report th,
 .analysis-report td {
-  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
-  padding: 0.4rem 0.6rem;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  padding: 0.5rem 0.7rem;
   text-align: left;
   vertical-align: top;
 }
 .analysis-report th {
-  background: color-mix(in srgb, currentColor 6%, transparent);
+  background: color-mix(in srgb, currentColor 5%, transparent);
   font-weight: 600;
 }
 
@@ -118,6 +237,9 @@ body {
     background: #ffffff !important;
     color: #000000 !important;
   }
+  .app-backdrop {
+    background: #ffffff !important;
+  }
   .no-print {
     display: none !important;
   }
@@ -126,9 +248,12 @@ body {
     background: #ffffff !important;
     min-height: 0 !important;
   }
-  section {
+  section,
+  .surface-card,
+  .surface-card-flat {
     border: none !important;
     background: #ffffff !important;
+    box-shadow: none !important;
     padding: 0 !important;
     margin-bottom: 1.25rem;
     page-break-inside: avoid;

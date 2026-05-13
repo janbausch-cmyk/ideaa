@@ -45,11 +45,20 @@ function describe(status: string): StatusBadge {
 
 const TONE_CLASS: Record<StatusBadge["tone"], string> = {
   done:
-    "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200",
+    "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200/70 dark:bg-emerald-900/30 dark:text-emerald-200 dark:ring-emerald-700/40",
   running:
-    "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
-  failed: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200",
-  queued: "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
+    "bg-amber-100 text-amber-800 ring-1 ring-amber-200/70 dark:bg-amber-900/30 dark:text-amber-200 dark:ring-amber-700/40",
+  failed:
+    "bg-rose-100 text-rose-800 ring-1 ring-rose-200/70 dark:bg-rose-900/30 dark:text-rose-200 dark:ring-rose-700/40",
+  queued:
+    "bg-[color:var(--surface-muted)] text-[color:var(--foreground-muted)] ring-1 ring-[color:var(--border)]",
+};
+
+const TONE_DOT: Record<StatusBadge["tone"], string> = {
+  done: "bg-emerald-500",
+  running: "bg-amber-500 animate-pulse",
+  failed: "bg-rose-500",
+  queued: "bg-zinc-400 dark:bg-zinc-500",
 };
 
 const POLL_INTERVAL_MS = 3000;
@@ -151,13 +160,20 @@ export default function IdeasIndex({
 
   if (!hydrated) {
     return (
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">Loading…</p>
+      <p className="text-sm text-[color:var(--foreground-muted)]">Loading…</p>
     );
   }
   if (knownIds.length === 0) {
     return (
-      <section className="rounded-lg border border-dashed border-zinc-300 bg-white p-6 text-center text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">
-        No ideas yet. <Link href="/" className="underline">Submit one</Link>.
+      <section className="rounded-2xl border border-dashed border-[color:var(--border-strong)] bg-[color:var(--surface)] p-8 text-center text-sm text-[color:var(--foreground-muted)]">
+        No ideas yet.{" "}
+        <Link
+          href="/"
+          className="font-medium text-[color:var(--brand-ink)] underline-offset-2 hover:underline"
+        >
+          Submit one
+        </Link>
+        .
       </section>
     );
   }
@@ -181,7 +197,7 @@ export default function IdeasIndex({
   return (
     <div className="flex flex-col gap-4">
       {error ? (
-        <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+        <p className="rounded-xl border border-rose-300/70 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/50 dark:text-rose-300">
           Status update failed: {error} (will retry)
         </p>
       ) : null}
@@ -219,11 +235,14 @@ function Section({
   starred?: boolean;
 }) {
   return (
-    <section className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-        {title}
-      </h2>
-      <ul className="flex flex-col divide-y divide-zinc-100 dark:divide-zinc-900">
+    <section className="surface-card flex flex-col gap-1 p-5">
+      <div className="flex items-center justify-between pb-1">
+        <h2 className="eyebrow">{title}</h2>
+        <span className="text-[11px] text-[color:var(--foreground-muted)]">
+          {ids.length} {ids.length === 1 ? "idea" : "ideas"}
+        </span>
+      </div>
+      <ul className="flex flex-col divide-y divide-[color:var(--border)]">
         {ids.map((id) => {
           const idea = statuses[id];
           const badge = idea ? describe(idea.status) : { label: "…", tone: "queued" as const };
@@ -234,7 +253,7 @@ function Section({
             <li key={id}>
               <Link
                 href={`/ideas/${id}`}
-                className="flex items-start gap-3 py-2 text-sm text-zinc-800 transition hover:text-black dark:text-zinc-200 dark:hover:text-white"
+                className="group flex items-center gap-3 py-3 text-sm text-[color:var(--foreground)] transition hover:text-[color:var(--brand-ink)]"
               >
                 {starred ? (
                   <svg
@@ -247,7 +266,7 @@ function Section({
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    className="mt-1 shrink-0 text-amber-500"
+                    className="shrink-0 text-amber-500"
                   >
                     <polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18 5.5 22 7 14.5 2 9.5 9 9 12 2" />
                   </svg>
@@ -255,13 +274,19 @@ function Section({
                 <span className="flex-1 truncate">{preview}</span>
                 <span
                   className={
-                    "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide " +
+                    "shrink-0 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide " +
                     TONE_CLASS[badge.tone]
                   }
                 >
+                  <span
+                    aria-hidden
+                    className={
+                      "h-1.5 w-1.5 rounded-full " + TONE_DOT[badge.tone]
+                    }
+                  />
                   {badge.label}
                 </span>
-                <span className="shrink-0 text-xs text-zinc-400 dark:text-zinc-500">
+                <span className="shrink-0 text-xs tabular-nums text-[color:var(--foreground-muted)]">
                   {submittedAt ? formatRelativeTime(submittedAt) : ""}
                 </span>
               </Link>

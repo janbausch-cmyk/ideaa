@@ -16,6 +16,11 @@ import {
 } from "./actions";
 
 export const dynamic = "force-dynamic";
+// Server Actions on this page (esp. `deepdiveAction`) kick off LLM work via
+// `after()`. That callback runs inside the Server Action's function lifetime
+// (bound by maxDuration). Without this, Vercel kills the function at the
+// default ~60s, leaving rows stuck in `deepdive_status = 'running'`.
+export const maxDuration = 300;
 
 const STATUS_LABELS: Record<string, string> = {
   queued: "In Warteschlange",
@@ -308,14 +313,23 @@ export default async function AdminIdeaDetailPage({
   );
 }
 
+const DEEPDIVE_STUCK_AFTER_MS = 5 * 60 * 1000;
+
 function DeepdiveSection({ idea }: { idea: Awaited<ReturnType<typeof getIdea>> }) {
   if (!idea) return null;
   const ddStatus = idea.deepdive_status ?? "idle";
   const isRunning = ddStatus === "queued" || ddStatus === "running";
+  const runningSinceMs = idea.deepdive_started_at
+    ? Date.now() - new Date(idea.deepdive_started_at).getTime()
+    : 0;
+  const isStuck = isRunning && runningSinceMs > DEEPDIVE_STUCK_AFTER_MS;
   const hasReport = !!idea.deepdive_report;
-  const buttonLabel = hasReport
-    ? "Neu ausarbeiten (überschreibt)"
-    : "Idee ausarbeiten";
+  const buttonLabel = isStuck
+    ? "Neu starten (vorherige Generierung hängt)"
+    : hasReport
+      ? "Neu ausarbeiten (überschreibt)"
+      : "Idee ausarbeiten";
+  const buttonDisabled = isRunning && !isStuck;
   const totalTokens =
     (idea.deepdive_input_tokens ?? 0) + (idea.deepdive_output_tokens ?? 0);
 
@@ -369,13 +383,21 @@ function DeepdiveSection({ idea }: { idea: Awaited<ReturnType<typeof getIdea>> }
           <input type="hidden" name="id" value={idea.id} />
           <button
             type="submit"
-            disabled={isRunning}
+            disabled={buttonDisabled}
             className="rounded-full bg-[color:var(--brand-ink)] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isRunning ? "Wird ausgearbeitet…" : buttonLabel}
+            {buttonDisabled ? "Wird ausgearbeitet…" : buttonLabel}
           </button>
         </form>
       </div>
+
+      {isStuck ? (
+        <div className="rounded-xl border border-rose-300/70 bg-rose-50 p-3 text-sm text-rose-900 dark:border-rose-700/40 dark:bg-rose-950/40 dark:text-rose-200">
+          <strong className="font-semibold">Hängt seit {Math.round(runningSinceMs / 60000)} min.</strong>{" "}
+          Wahrscheinlich hat die Vercel-Function das Timeout erreicht, bevor der LLM-Call fertig war.
+          Klick auf <em>Neu starten</em>, um einen frischen Versuch anzustoßen — der reclaimt die Row automatisch.
+        </div>
+      ) : null}
 
       {idea.deepdive_error ? (
         <div className="rounded-xl border border-rose-300/70 bg-rose-50 p-3 text-sm text-rose-900 dark:border-rose-700/40 dark:bg-rose-950/40 dark:text-rose-200">

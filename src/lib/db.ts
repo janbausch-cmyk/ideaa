@@ -438,7 +438,10 @@ export async function adminUpdateIdea(
 
 // --- Deepdive (Ausarbeitung) ---------------------------------------------
 
-const DEEPDIVE_STALE_AFTER_SECONDS = 600;
+// Matches the page-level maxDuration (300s) in app/admin/ideas/[id]/page.tsx
+// plus a small buffer. If a row has been "running" longer than this, the
+// Vercel function that owned it is definitely dead and the row is reclaimable.
+const DEEPDIVE_STALE_AFTER_SECONDS = 360;
 
 /**
  * Atomically transitions a deepdive into 'running' state. Returns the row

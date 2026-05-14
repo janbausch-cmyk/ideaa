@@ -445,9 +445,11 @@ const DEEPDIVE_STALE_AFTER_SECONDS = 360;
 
 /**
  * Atomically transitions a deepdive into 'running' state. Returns the row
- * iff it was claimed. A row is claimable when status is idle/done/failed
- * (fresh kick-off or re-run), or when it's been stuck in queued/running for
- * longer than the stale window (worker process died mid-flight).
+ * iff it was claimed. Claimable when:
+ * - status is idle/done/failed (fresh kick-off or re-run after terminal state),
+ * - status is 'queued' (semantically: "a deepdiveAction just marked this for
+ *   pickup" — claim it unconditionally, no staleness check needed),
+ * - status is 'running' but stale (the worker that owned it is dead).
  */
 export async function claimDeepdive(id: string): Promise<IdeaRow | null> {
   if (!isValidIdeaId(id)) return null;
@@ -462,9 +464,9 @@ export async function claimDeepdive(id: string): Promise<IdeaRow | null> {
         updated_at = now()
     WHERE id = ${id}::uuid
       AND (
-        deepdive_status IN ('idle', 'done', 'failed')
+        deepdive_status IN ('idle', 'done', 'failed', 'queued')
         OR (
-          deepdive_status IN ('queued', 'running')
+          deepdive_status = 'running'
           AND deepdive_started_at IS NOT NULL
           AND deepdive_started_at < now() - (${DEEPDIVE_STALE_AFTER_SECONDS} || ' seconds')::interval
         )

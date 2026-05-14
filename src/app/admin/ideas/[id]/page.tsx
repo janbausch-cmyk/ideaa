@@ -412,7 +412,7 @@ function DeepdiveSection({ idea }: { idea: Awaited<ReturnType<typeof getIdea>> }
             {idea.deepdive_report ?? ""}
           </ReactMarkdown>
         </article>
-      ) : isRunning ? (
+      ) : isRunning && !isStuck ? (
         <div className="rounded-xl border border-amber-300/70 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-200">
           Die Ausarbeitung läuft (typisch 30–60s, inkl. Web-Recherche). Diese
           Seite aktualisiert sich automatisch.

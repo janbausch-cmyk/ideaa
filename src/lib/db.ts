@@ -93,6 +93,24 @@ export async function ensureSchema(): Promise<void> {
       `;
       await sql`CREATE INDEX IF NOT EXISTS cta_events_created_at_idx ON cta_events (created_at DESC)`;
       await sql`CREATE INDEX IF NOT EXISTS cta_events_tier_created_at_idx ON cta_events (tier, created_at DESC)`;
+
+      // IDEAA-69 Phase A: append-only audit of Stripe webhook events.
+      // Primary key = Stripe event id so retries dedupe via ON CONFLICT DO NOTHING.
+      await sql`
+        CREATE TABLE IF NOT EXISTS stripe_events (
+          id                  text PRIMARY KEY,
+          type                text NOT NULL,
+          amount_minor        int,
+          currency            text,
+          customer_email      text,
+          idea_id             uuid,
+          payload             jsonb NOT NULL,
+          notified_at         timestamptz,
+          notification_error  text,
+          created_at          timestamptz NOT NULL DEFAULT now()
+        )
+      `;
+      await sql`CREATE INDEX IF NOT EXISTS stripe_events_type_created_at_idx ON stripe_events (type, created_at DESC)`;
     })().catch((err) => {
       schemaReady = null;
       throw err;
@@ -625,6 +643,62 @@ export async function recordCtaClick(args: {
 }
 
 export type CtaTierCount = { tier: string; n: number };
+
+export type StripeEventInsert = {
+  id: string;
+  type: string;
+  amountMinor: number | null;
+  currency: string | null;
+  customerEmail: string | null;
+  ideaId: string | null;
+  payload: unknown;
+};
+
+// Returns true when the row was newly inserted, false when the event id was
+// already present (idempotent dedupe for Stripe retries).
+export async function recordStripeEvent(args: StripeEventInsert): Promise<boolean> {
+  await ensureSchema();
+  const sql = getSql();
+  const ideaId = args.ideaId && isValidIdeaId(args.ideaId) ? args.ideaId : null;
+  const rows = (await sql`
+    INSERT INTO stripe_events
+      (id, type, amount_minor, currency, customer_email, idea_id, payload)
+    VALUES (
+      ${args.id},
+      ${args.type},
+      ${args.amountMinor},
+      ${args.currency},
+      ${args.customerEmail},
+      ${ideaId}::uuid,
+      ${JSON.stringify(args.payload)}::jsonb
+    )
+    ON CONFLICT (id) DO NOTHING
+    RETURNING id
+  `) as Array<{ id: string }>;
+  return rows.length > 0;
+}
+
+export async function markStripeEventNotified(
+  id: string,
+  ok: boolean,
+  errorMessage: string | null,
+): Promise<void> {
+  await ensureSchema();
+  const sql = getSql();
+  if (ok) {
+    await sql`
+      UPDATE stripe_events
+      SET notified_at = now(), notification_error = NULL
+      WHERE id = ${id}
+    `;
+  } else {
+    await sql`
+      UPDATE stripe_events
+      SET notification_error = ${errorMessage}
+      WHERE id = ${id}
+    `;
+  }
+}
 
 export async function ctaCountsByTier(): Promise<CtaTierCount[]> {
   await ensureSchema();

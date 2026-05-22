@@ -1,9 +1,14 @@
-// IDEAA-69 Phase A: Stripe webhook → Telegram notification.
+// IDEAA-69 Phase A: Stripe webhook → DB audit row → Telegram notification.
 // Stripe handles checkout + conversion tracking itself. This endpoint is just
-// the "ping Jan when money arrives" hook. Stays dumb on purpose; richer
+// the "ping Jan when money arrives" hook plus a thin audit log so we can
+// reconcile against Stripe's dashboard. Stays dumb on purpose; richer
 // fulfilment / DB-of-purchases comes with Phase B (auth + entitlements).
 
 import { sendMessage } from "@/lib/telegram/client";
+import {
+  markStripeEventNotified,
+  recordStripeEvent,
+} from "@/lib/db";
 import {
   formatAmountFromMinor,
   verifyStripeWebhook,
@@ -48,18 +53,54 @@ type PaymentIntentLike = {
   metadata?: Record<string, string> | null;
 };
 
+type EventSummary = {
+  amountMinor: number | null;
+  currency: string | null;
+  customerEmail: string | null;
+  ideaId: string | null;
+};
+
+function summarizeEvent(
+  eventType: string,
+  data: Record<string, unknown>,
+): EventSummary {
+  if (eventType.startsWith("checkout.session")) {
+    const s = data as CheckoutSessionLike;
+    return {
+      amountMinor: s.amount_total ?? null,
+      currency: s.currency ?? null,
+      customerEmail: s.customer_email ?? s.customer_details?.email ?? null,
+      ideaId: s.client_reference_id ?? null,
+    };
+  }
+  if (eventType === "payment_intent.succeeded") {
+    const p = data as PaymentIntentLike;
+    return {
+      amountMinor: p.amount ?? null,
+      currency: p.currency ?? null,
+      customerEmail: p.receipt_email ?? null,
+      ideaId: null,
+    };
+  }
+  return {
+    amountMinor: null,
+    currency: null,
+    customerEmail: null,
+    ideaId: null,
+  };
+}
+
 function buildNotificationMessage(
   eventType: string,
   data: Record<string, unknown>,
+  summary: EventSummary,
 ): string {
+  const amount = formatAmountFromMinor(summary.amountMinor, summary.currency);
+  const email = summary.customerEmail ?? "(keine E-Mail)";
+  const ideaRef = summary.ideaId ? `\nIdee: ${summary.ideaId}` : "";
+
   if (eventType.startsWith("checkout.session")) {
     const s = data as CheckoutSessionLike;
-    const amount = formatAmountFromMinor(s.amount_total, s.currency);
-    const email =
-      s.customer_email ??
-      s.customer_details?.email ??
-      "(keine E-Mail)";
-    const ideaRef = s.client_reference_id ? `\nIdee: ${s.client_reference_id}` : "";
     return (
       `💶 IDEAA Phase A — Kauf eingegangen!\n` +
       `Betrag: ${amount}\n` +
@@ -71,11 +112,10 @@ function buildNotificationMessage(
   }
   if (eventType === "payment_intent.succeeded") {
     const p = data as PaymentIntentLike;
-    const amount = formatAmountFromMinor(p.amount, p.currency);
     return (
       `💶 IDEAA Phase A — Payment succeeded\n` +
       `Betrag: ${amount}\n` +
-      `Käufer: ${p.receipt_email ?? "(keine E-Mail)"}\n` +
+      `Käufer: ${email}\n` +
       `Intent: ${p.id ?? "?"}`
     );
   }
@@ -107,35 +147,81 @@ export async function POST(request: Request) {
     );
   }
   const event = verified.event;
+  const summary = summarizeEvent(event.type, event.data.object ?? {});
+
+  // Append audit row. Dedupes on the Stripe event id, so retries are safe.
+  let inserted = false;
+  try {
+    inserted = await recordStripeEvent({
+      id: event.id,
+      type: event.type,
+      amountMinor: summary.amountMinor,
+      currency: summary.currency,
+      customerEmail: summary.customerEmail,
+      ideaId: summary.ideaId,
+      payload: event,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[stripe-webhook] recordStripeEvent failed", message);
+    // Don't 5xx — Stripe will retry-storm and we'd rather notify once than
+    // miss the event entirely. Continue and try the Telegram notify.
+  }
 
   if (!NOTIFY_EVENT_TYPES.has(event.type)) {
-    return Response.json({ ok: true, ignored: event.type });
+    return Response.json({
+      ok: true,
+      ignored: event.type,
+      stored: inserted,
+    });
+  }
+
+  // If this is a Stripe retry of an already-notified event, skip the Telegram
+  // ping (avoid spamming Jan on flaky webhook ACKs).
+  if (!inserted) {
+    return Response.json({
+      ok: true,
+      duplicate: true,
+      event: { id: event.id, type: event.type },
+    });
   }
 
   const chatId = getNotifyChatId();
   if (!chatId) {
     console.warn(
-      "[stripe-webhook] no Telegram chat id configured — event %s dropped",
+      "[stripe-webhook] no Telegram chat id configured — event %s stored but not notified",
       event.id,
     );
-    return Response.json({ ok: true, notified: false });
+    await markStripeEventNotified(event.id, false, "no chat id configured");
+    return Response.json({ ok: true, notified: false, stored: true });
   }
 
-  const text = buildNotificationMessage(event.type, event.data.object ?? {});
+  const text = buildNotificationMessage(
+    event.type,
+    event.data.object ?? {},
+    summary,
+  );
   try {
     await sendMessage({
       chat_id: chatId,
       text,
       disable_web_page_preview: true,
     });
+    await markStripeEventNotified(event.id, true, null);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[stripe-webhook] telegram send failed", message);
+    await markStripeEventNotified(event.id, false, message);
     // 200 anyway — Stripe will replay 5xx, and we don't want infinite retries
-    // on a Telegram outage. The event is already verified-genuine; Jan can
-    // also see it in the Stripe dashboard.
+    // on a Telegram outage. The event is already stored and verified-genuine;
+    // Jan can also see it in the Stripe dashboard.
     return Response.json({ ok: true, notified: false, error: message });
   }
 
-  return Response.json({ ok: true, notified: true });
+  return Response.json({
+    ok: true,
+    notified: true,
+    stored: true,
+    event: { id: event.id, type: event.type },
+  });
 }

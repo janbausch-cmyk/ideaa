@@ -38,7 +38,7 @@ export const TIERS: ReadonlyArray<Tier> = [
     title: "Vollberatungs-Stunde",
     tagline: "60-min Call + schriftliche Zusammenfassung",
     blurb:
-      "60-min 1:1-Call mit Jan plus eine schriftliche Zusammenfassung mit Next-Actions, Risiken und konkreten Schritten.",
+      "60-min 1:1-Beratungs-Call plus eine schriftliche Zusammenfassung mit Next-Actions, Risiken und konkreten Schritten.",
     envVar: "STRIPE_PAYMENT_LINK_100",
   },
 ];

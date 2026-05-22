@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 
 import CopyLinkButton from "@/components/CopyLinkButton";
 import FavoriteButton from "@/components/FavoriteButton";
+import MonetizationCta from "@/components/MonetizationCta";
 import PrintButton from "@/components/PrintButton";
 import RecordHistoryEntry from "@/components/RecordHistoryEntry";
 import { getIdea } from "@/lib/db";
@@ -192,6 +193,7 @@ export default async function IdeaPage({
                       </article>
                     </section>
                   ) : null}
+                  <MonetizationCta ideaId={idea.id} />
                 </>
               );
             })()

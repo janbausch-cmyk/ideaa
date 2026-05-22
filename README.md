@@ -53,6 +53,14 @@ The `ideas` table is created on first request — no manual migration step.
 
 The admin surface is locked closed unless `ADMIN_TOKEN` is set on the deployment.
 
+## Phase A monetization (IDEAA-69)
+
+Stripe Payment Links surfaced at the bottom of every public Ausarbeitung.
+Three tiers (€25 / €50 / €100), manual delivery, no auth. CTA clicks are
+counted in the `cta_events` table; purchases ping Jan via Telegram
+(`/api/stripe/webhook`). Setup checklist and delivery process:
+[`docs/phase-a-monetization.md`](docs/phase-a-monetization.md).
+
 ## Deploy
 
 Push to `main` and Vercel auto-deploys. Production needs `DATABASE_URL` (or

@@ -79,6 +79,20 @@ export async function ensureSchema(): Promise<void> {
         )
       `;
       await sql`CREATE INDEX IF NOT EXISTS weekly_platform_reports_week_start_at_idx ON weekly_platform_reports (week_start_at DESC)`;
+
+      // IDEAA-69 Phase A: CTA click tracking. Append-only.
+      await sql`
+        CREATE TABLE IF NOT EXISTS cta_events (
+          id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          idea_id     uuid REFERENCES ideas(id) ON DELETE SET NULL,
+          tier        text NOT NULL,
+          user_agent  text,
+          referer     text,
+          created_at  timestamptz NOT NULL DEFAULT now()
+        )
+      `;
+      await sql`CREATE INDEX IF NOT EXISTS cta_events_created_at_idx ON cta_events (created_at DESC)`;
+      await sql`CREATE INDEX IF NOT EXISTS cta_events_tier_created_at_idx ON cta_events (tier, created_at DESC)`;
     })().catch((err) => {
       schemaReady = null;
       throw err;
@@ -591,6 +605,37 @@ export async function getWeeklyPlatformReport(
     LIMIT 1
   `) as WeeklyPlatformReportRow[];
   return rows[0] ?? null;
+}
+
+// --- CTA tracking (IDEAA-69) ---------------------------------------------
+
+export async function recordCtaClick(args: {
+  ideaId: string | null;
+  tier: string;
+  userAgent: string | null;
+  referer: string | null;
+}): Promise<void> {
+  await ensureSchema();
+  const sql = getSql();
+  const ideaId = args.ideaId && isValidIdeaId(args.ideaId) ? args.ideaId : null;
+  await sql`
+    INSERT INTO cta_events (idea_id, tier, user_agent, referer)
+    VALUES (${ideaId}::uuid, ${args.tier}, ${args.userAgent}, ${args.referer})
+  `;
+}
+
+export type CtaTierCount = { tier: string; n: number };
+
+export async function ctaCountsByTier(): Promise<CtaTierCount[]> {
+  await ensureSchema();
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT tier, count(*)::int AS n
+    FROM cta_events
+    GROUP BY tier
+    ORDER BY n DESC
+  `) as CtaTierCount[];
+  return rows;
 }
 
 export async function adminDeleteIdea(id: string): Promise<boolean> {

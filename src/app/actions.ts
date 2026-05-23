@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { after } from "next/server";
 
 import { insertIdeas, type IdeaRow } from "@/lib/db";
+import { setUnlockCookie } from "@/lib/unlock-cookies";
 import { runWorkerTick } from "@/lib/worker";
 
 const MAX_LEN_PER_IDEA = 20_000;
@@ -46,6 +47,12 @@ export async function submitIdea(formData: FormData): Promise<void> {
   } catch (err) {
     console.error("[submitIdea] insert failed", err);
     redirect("/?error=insert-failed");
+  }
+
+  // IDEAA-72: mint a device-bound unlock cookie per submitted idea so the
+  // submitter sees the full report without hitting the €1.99 paywall.
+  for (const row of inserted) {
+    await setUnlockCookie(row.id);
   }
 
   // Kick the worker without blocking the response. The tick claims rows via

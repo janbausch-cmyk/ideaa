@@ -111,6 +111,25 @@ export async function ensureSchema(): Promise<void> {
         )
       `;
       await sql`CREATE INDEX IF NOT EXISTS stripe_events_type_created_at_idx ON stripe_events (type, created_at DESC)`;
+
+      // IDEAA-72 Phase A: per-idea unlock audit. Written by the Stripe webhook
+      // when a €1.99 paywall payment completes. The success route reads this
+      // by stripe_session_id to set the device unlock cookie. Cookie is the
+      // visibility gate; this table is the conversion / audit ground truth.
+      await sql`
+        CREATE TABLE IF NOT EXISTS idea_unlocks (
+          id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          idea_id             uuid NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,
+          stripe_session_id   text UNIQUE,
+          stripe_event_id     text,
+          amount_minor        int,
+          currency            text,
+          customer_email      text,
+          created_at          timestamptz NOT NULL DEFAULT now()
+        )
+      `;
+      await sql`CREATE INDEX IF NOT EXISTS idea_unlocks_idea_id_idx ON idea_unlocks (idea_id)`;
+      await sql`CREATE INDEX IF NOT EXISTS idea_unlocks_created_at_idx ON idea_unlocks (created_at DESC)`;
     })().catch((err) => {
       schemaReady = null;
       throw err;
@@ -698,6 +717,68 @@ export async function markStripeEventNotified(
       WHERE id = ${id}
     `;
   }
+}
+
+// --- Idea unlocks (IDEAA-72) ---------------------------------------------
+
+export type IdeaUnlockInsert = {
+  ideaId: string;
+  stripeSessionId: string | null;
+  stripeEventId: string;
+  amountMinor: number | null;
+  currency: string | null;
+  customerEmail: string | null;
+};
+
+// Returns true when a new row was inserted, false when the session id was
+// already present (Stripe-retry dedupe).
+export async function recordIdeaUnlock(
+  args: IdeaUnlockInsert,
+): Promise<boolean> {
+  if (!isValidIdeaId(args.ideaId)) return false;
+  await ensureSchema();
+  const sql = getSql();
+  const rows = (await sql`
+    INSERT INTO idea_unlocks
+      (idea_id, stripe_session_id, stripe_event_id,
+       amount_minor, currency, customer_email)
+    VALUES (
+      ${args.ideaId}::uuid,
+      ${args.stripeSessionId},
+      ${args.stripeEventId},
+      ${args.amountMinor},
+      ${args.currency},
+      ${args.customerEmail}
+    )
+    ON CONFLICT (stripe_session_id) DO NOTHING
+    RETURNING id
+  `) as Array<{ id: string }>;
+  return rows.length > 0;
+}
+
+export async function getIdeaUnlockBySession(
+  sessionId: string,
+): Promise<{ ideaId: string } | null> {
+  if (!sessionId) return null;
+  await ensureSchema();
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT idea_id::text AS idea_id
+    FROM idea_unlocks
+    WHERE stripe_session_id = ${sessionId}
+    LIMIT 1
+  `) as Array<{ idea_id: string }>;
+  if (rows.length === 0) return null;
+  return { ideaId: rows[0].idea_id };
+}
+
+export async function countIdeaUnlocks(): Promise<number> {
+  await ensureSchema();
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT count(*)::int AS n FROM idea_unlocks
+  `) as Array<{ n: number }>;
+  return rows[0]?.n ?? 0;
 }
 
 export async function ctaCountsByTier(): Promise<CtaTierCount[]> {

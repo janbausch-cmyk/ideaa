@@ -7,6 +7,7 @@
 import { sendMessage } from "@/lib/telegram/client";
 import {
   markStripeEventNotified,
+  recordIdeaUnlock,
   recordStripeEvent,
 } from "@/lib/db";
 import {
@@ -58,6 +59,7 @@ type EventSummary = {
   currency: string | null;
   customerEmail: string | null;
   ideaId: string | null;
+  sessionId: string | null;
 };
 
 function summarizeEvent(
@@ -71,6 +73,7 @@ function summarizeEvent(
       currency: s.currency ?? null,
       customerEmail: s.customer_email ?? s.customer_details?.email ?? null,
       ideaId: s.client_reference_id ?? null,
+      sessionId: s.id ?? null,
     };
   }
   if (eventType === "payment_intent.succeeded") {
@@ -80,6 +83,7 @@ function summarizeEvent(
       currency: p.currency ?? null,
       customerEmail: p.receipt_email ?? null,
       ideaId: null,
+      sessionId: null,
     };
   }
   return {
@@ -87,6 +91,7 @@ function summarizeEvent(
     currency: null,
     customerEmail: null,
     ideaId: null,
+    sessionId: null,
   };
 }
 
@@ -166,6 +171,34 @@ export async function POST(request: Request) {
     console.error("[stripe-webhook] recordStripeEvent failed", message);
     // Don't 5xx — Stripe will retry-storm and we'd rather notify once than
     // miss the event entirely. Continue and try the Telegram notify.
+  }
+
+  // IDEAA-72: on a completed checkout for a known idea, persist a per-idea
+  // unlock row. The success route reads this by session id to mint the device
+  // cookie. Dedupes on stripe_session_id so Stripe retries are safe.
+  if (
+    inserted &&
+    summary.ideaId &&
+    summary.sessionId &&
+    (event.type === "checkout.session.completed" ||
+      event.type === "checkout.session.async_payment_succeeded")
+  ) {
+    try {
+      await recordIdeaUnlock({
+        ideaId: summary.ideaId,
+        stripeSessionId: summary.sessionId,
+        stripeEventId: event.id,
+        amountMinor: summary.amountMinor,
+        currency: summary.currency,
+        customerEmail: summary.customerEmail,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      // Best-effort. Audit trail in stripe_events still wins; the buyer just
+      // sees the "processing" success screen until the row appears (or, if
+      // this is a permanent error, they email Jan from the failure copy).
+      console.error("[stripe-webhook] recordIdeaUnlock failed", message);
+    }
   }
 
   if (!NOTIFY_EVENT_TYPES.has(event.type)) {

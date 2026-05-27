@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  
+  <g transform="translate(14 53)" fill="currentColor">
+    <path d="
+      M 0 150
+      L 37.400000000000006 30
+      Q 55 -8 72.60000000000001 30
+      L 110 150
+      L 85.8 150
+      L 55 44
+      L 24.2 150 Z
+    "/>
+    <g transform="translate(118 0)">
+      <path d="
+        M 0 150
+        L 37.400000000000006 30
+        Q 55 -8 72.60000000000001 30
+        L 110 150
+        L 85.8 150
+        L 55 44
+        L 24.2 150 Z
+      "/>
+    </g>
+  </g>
+</svg>

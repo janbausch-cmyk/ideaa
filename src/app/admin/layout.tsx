@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import BrandWordmark from "@/components/BrandWordmark";
 import { isAdminAuthenticated } from "@/lib/admin-auth";
 
 import LogoutButton from "./LogoutButton";
@@ -19,23 +20,15 @@ export default async function AdminLayout({
           <div className="flex items-center gap-5">
             <Link
               href="/admin/ideas"
-              className="flex items-center gap-2 font-bold tracking-tight"
+              className="flex items-center gap-2.5 font-bold tracking-tight"
+              aria-label="IDEAA Admin"
             >
-              <span
-                aria-hidden
-                className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold text-white"
-                style={{
-                  background:
-                    "linear-gradient(120deg, var(--brand-from), var(--brand-via), var(--brand-to))",
-                }}
-              >
-                I
-              </span>
-              <span>
-                <span className="brand-wordmark">IDEAA</span>
-                <span className="ml-1.5 text-xs font-medium uppercase tracking-wider text-[color:var(--foreground-muted)]">
-                  Admin
-                </span>
+              <BrandWordmark
+                className="brand-peak h-6 w-auto sm:h-7"
+                title="IDEAA"
+              />
+              <span className="text-xs font-medium uppercase tracking-wider text-[color:var(--foreground-muted)]">
+                Admin
               </span>
             </Link>
             {authenticated ? (

@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/peak-wordmark-1200-dark.png">
+    <img alt="IDEAA" src="public/peak-wordmark-1200.png" width="360">
+  </picture>
+</p>
+
 # IDEAA
 
 Paste an idea, get a validation report.

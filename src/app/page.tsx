@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import BrandWordmark from "@/components/BrandWordmark";
 import PreviousIdeasList from "@/components/PreviousIdeasList";
 
 import { submitIdea } from "./actions";
@@ -32,11 +33,13 @@ export default async function Home({
   return (
     <main className="app-backdrop flex min-h-screen flex-col items-center px-6 py-16 sm:py-24">
       <div className="flex w-full max-w-2xl flex-col gap-8">
-        <header className="flex flex-col items-center gap-3 text-center">
+        <header className="flex flex-col items-center gap-4 text-center">
           <span className="eyebrow">Idea → validated business case</span>
-          <h1 className="brand-wordmark text-5xl font-bold tracking-tight sm:text-6xl">
-            IDEAA
-          </h1>
+          <h1 className="sr-only">IDEAA</h1>
+          <BrandWordmark
+            className="brand-peak h-14 w-auto sm:h-16"
+            title="IDEAA"
+          />
           <p className="max-w-md text-base text-[color:var(--foreground-muted)] sm:text-lg">
             Paste a raw idea. Get a structured validation report and a plan you
             can act on.

@@ -89,6 +89,17 @@ body {
   color: transparent;
 }
 
+/* Peak-Wortmarke (Konzept 3, finales IDEAA-Logo): dunkelgrün auf hellem BG,
+   weiss in Dark Mode. Per currentColor in BrandWordmark/BrandMark themed. */
+.brand-peak {
+  color: #0f4c3a;
+}
+@media (prefers-color-scheme: dark) {
+  .brand-peak {
+    color: #f5f5f4;
+  }
+}
+
 .brand-button {
   background: linear-gradient(
     100deg,

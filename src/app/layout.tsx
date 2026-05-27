@@ -12,10 +12,29 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ??
+  "https://ideaa.app";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "IDEAA — paste an idea, get a validation report",
   description:
     "Turn raw ideas into validated, actionable business opportunities with AI-assisted analysis and implementation planning.",
+  openGraph: {
+    title: "IDEAA — paste an idea, get a validation report",
+    description:
+      "Turn raw ideas into validated, actionable business opportunities with AI-assisted analysis and implementation planning.",
+    siteName: "IDEAA",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "IDEAA — paste an idea, get a validation report",
+    description:
+      "Turn raw ideas into validated, actionable business opportunities with AI-assisted analysis and implementation planning.",
+  },
 };
 
 export default function RootLayout({

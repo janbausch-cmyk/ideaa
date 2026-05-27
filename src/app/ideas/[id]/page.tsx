@@ -5,11 +5,9 @@ import remarkGfm from "remark-gfm";
 
 import CopyLinkButton from "@/components/CopyLinkButton";
 import FavoriteButton from "@/components/FavoriteButton";
-import PaywallCard from "@/components/PaywallCard";
 import PrintButton from "@/components/PrintButton";
 import RecordHistoryEntry from "@/components/RecordHistoryEntry";
 import { getIdea } from "@/lib/db";
-import { hasUnlockCookie } from "@/lib/unlock-cookies";
 
 export const dynamic = "force-dynamic";
 
@@ -27,32 +25,6 @@ function splitReportAndPlan(markdown: string): {
   const report = markdown.slice(0, splitAt).trim();
   const plan = markdown.slice(splitAt).trim();
   return { report, plan: plan || null };
-}
-
-// IDEAA-72: Teaser = first 1–2 paragraphs of the report, capped at TEASER_CHARS.
-// Just enough to prove the analysis is real and concrete; never enough to
-// substitute for the full report (which contains the GTM/MVP/risks plan).
-const TEASER_CHARS = 600;
-
-function buildTeaser(markdown: string): string {
-  const trimmed = markdown.trim();
-  if (trimmed.length <= TEASER_CHARS) return trimmed;
-  // Prefer cutting at the last paragraph boundary inside the budget so the
-  // teaser doesn't end mid-sentence.
-  const slice = trimmed.slice(0, TEASER_CHARS);
-  const lastParagraph = slice.lastIndexOf("\n\n");
-  if (lastParagraph > TEASER_CHARS * 0.5) {
-    return slice.slice(0, lastParagraph).trim();
-  }
-  const lastSentence = Math.max(
-    slice.lastIndexOf(". "),
-    slice.lastIndexOf("! "),
-    slice.lastIndexOf("? "),
-  );
-  if (lastSentence > TEASER_CHARS * 0.5) {
-    return slice.slice(0, lastSentence + 1).trim();
-  }
-  return slice.trim();
 }
 
 type StatusInfo = {
@@ -107,7 +79,6 @@ export default async function IdeaPage({
   if (!idea) {
     notFound();
   }
-  const unlocked = await hasUnlockCookie(idea.id);
   const status = describeStatus(idea.status);
   const submittedAtDate = new Date(idea.created_at);
   const submittedAt = submittedAtDate.toLocaleString();
@@ -201,26 +172,6 @@ export default async function IdeaPage({
         {status.tone === "ready" && idea.analysis_report
           ? (() => {
               const { report, plan } = splitReportAndPlan(idea.analysis_report);
-              if (!unlocked) {
-                const teaser = buildTeaser(report);
-                return (
-                  <>
-                    <section className="surface-card flex flex-col gap-3 p-6 sm:p-7">
-                      <h2 className="eyebrow">Validation report — Vorschau</h2>
-                      <article className="analysis-report">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {teaser}
-                        </ReactMarkdown>
-                      </article>
-                      <p className="text-xs italic text-[color:var(--foreground-muted)]">
-                        Vorschau — der vollständige Bericht ist hinter der
-                        Paywall.
-                      </p>
-                    </section>
-                    <PaywallCard ideaId={idea.id} />
-                  </>
-                );
-              }
               return (
                 <>
                   <section className="surface-card flex flex-col gap-3 p-6 sm:p-7">

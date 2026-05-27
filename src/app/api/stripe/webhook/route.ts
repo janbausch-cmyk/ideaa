@@ -1,13 +1,12 @@
-// IDEAA-69 Phase A: Stripe webhook → DB audit row → Telegram notification.
-// Stripe handles checkout + conversion tracking itself. This endpoint is just
-// the "ping Jan when money arrives" hook plus a thin audit log so we can
-// reconcile against Stripe's dashboard. Stays dumb on purpose; richer
-// fulfilment / DB-of-purchases comes with Phase B (auth + entitlements).
+// Stripe webhook → DB audit row → Telegram notification.
+// Generic event handler: signature-verifies the event, stores it in
+// `stripe_events` (idempotent on event id), and pings Telegram on
+// payment-success types. Kept post-IDEAA-83 paywall removal as a passive
+// audit/notify hook for any future Stripe activity.
 
 import { sendMessage } from "@/lib/telegram/client";
 import {
   markStripeEventNotified,
-  recordIdeaUnlock,
   recordStripeEvent,
 } from "@/lib/db";
 import {
@@ -171,34 +170,6 @@ export async function POST(request: Request) {
     console.error("[stripe-webhook] recordStripeEvent failed", message);
     // Don't 5xx — Stripe will retry-storm and we'd rather notify once than
     // miss the event entirely. Continue and try the Telegram notify.
-  }
-
-  // IDEAA-72: on a completed checkout for a known idea, persist a per-idea
-  // unlock row. The success route reads this by session id to mint the device
-  // cookie. Dedupes on stripe_session_id so Stripe retries are safe.
-  if (
-    inserted &&
-    summary.ideaId &&
-    summary.sessionId &&
-    (event.type === "checkout.session.completed" ||
-      event.type === "checkout.session.async_payment_succeeded")
-  ) {
-    try {
-      await recordIdeaUnlock({
-        ideaId: summary.ideaId,
-        stripeSessionId: summary.sessionId,
-        stripeEventId: event.id,
-        amountMinor: summary.amountMinor,
-        currency: summary.currency,
-        customerEmail: summary.customerEmail,
-      });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      // Best-effort. Audit trail in stripe_events still wins; the buyer just
-      // sees the "processing" success screen until the row appears (or, if
-      // this is a permanent error, they email Jan from the failure copy).
-      console.error("[stripe-webhook] recordIdeaUnlock failed", message);
-    }
   }
 
   if (!NOTIFY_EVENT_TYPES.has(event.type)) {

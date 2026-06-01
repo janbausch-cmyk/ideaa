@@ -151,6 +151,11 @@ export type ToolTraceEntry =
       result_count: number;
       urls: string[];
       error?: string;
+    }
+  | {
+      kind: "link_check";
+      broken_count: number;
+      broken_urls: string[];
     };
 
 export type DeepdiveStatus = "idle" | "queued" | "running" | "done" | "failed";

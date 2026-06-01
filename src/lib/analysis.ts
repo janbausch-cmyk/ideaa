@@ -12,7 +12,12 @@ import {
 
 const ANALYSIS_MODEL = "claude-opus-4-7";
 const MAX_TOKENS = 4000;
-const MAX_SEARCHES = 15;
+const MAX_SEARCHES = 20;
+const LINK_CHECK_TIMEOUT_MS = 4000;
+const LINK_CHECK_CONCURRENCY = 8;
+const LINK_CHECK_USER_AGENT =
+  "Mozilla/5.0 (compatible; IDEAA-LinkCheck/1.0; +https://ideaa.app)";
+const BROKEN_LINK_NOTE = "*(Link nicht erreichbar)*";
 
 let cachedClient: Anthropic | null = null;
 
@@ -119,13 +124,125 @@ export async function analyzeClaimedIdea(idea: IdeaRow): Promise<void> {
     });
 
     const trace = extractToolTrace(response.content);
-    const report = extractText(response.content);
-    if (!report) {
+    const rawReport = extractText(response.content);
+    if (!rawReport) {
       throw new Error("Empty response from analysis model.");
     }
-    await saveAnalysisReady(idea.id, report, trace.length > 0 ? trace : null);
+    const { report, brokenUrls } = await verifyAndAnnotateLinks(rawReport);
+    const finalTrace: ToolTraceEntry[] =
+      brokenUrls.length > 0
+        ? [
+            ...trace,
+            {
+              kind: "link_check",
+              broken_count: brokenUrls.length,
+              broken_urls: brokenUrls,
+            },
+          ]
+        : trace;
+    await saveAnalysisReady(
+      idea.id,
+      report,
+      finalTrace.length > 0 ? finalTrace : null,
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await saveAnalysisFailed(idea.id, message);
   }
+}
+
+const MARKDOWN_LINK_RE = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+
+function extractMarkdownLinkUrls(markdown: string): string[] {
+  const urls = new Set<string>();
+  for (const match of markdown.matchAll(MARKDOWN_LINK_RE)) {
+    urls.add(match[2]);
+  }
+  return [...urls];
+}
+
+async function checkUrl(url: string): Promise<boolean> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), LINK_CHECK_TIMEOUT_MS);
+  const init: RequestInit = {
+    method: "HEAD",
+    redirect: "follow",
+    signal: controller.signal,
+    headers: {
+      "user-agent": LINK_CHECK_USER_AGENT,
+      accept: "*/*",
+    },
+  };
+  try {
+    let res: Response;
+    try {
+      res = await fetch(url, init);
+    } catch {
+      clearTimeout(timer);
+      return false;
+    }
+    // Some hosts dislike HEAD — retry with GET on 405 / 501.
+    if (res.status === 405 || res.status === 501) {
+      try {
+        res = await fetch(url, { ...init, method: "GET" });
+      } catch {
+        clearTimeout(timer);
+        return false;
+      }
+    }
+    clearTimeout(timer);
+    if (res.status >= 200 && res.status < 400) return true;
+    // Bot-protection-y codes: keep the link, treat as probably OK.
+    if (res.status === 401 || res.status === 403 || res.status === 429) {
+      return true;
+    }
+    // 404, 410, 5xx → broken.
+    return false;
+  } catch {
+    clearTimeout(timer);
+    return false;
+  }
+}
+
+async function checkUrlsConcurrent(
+  urls: string[],
+): Promise<Record<string, boolean>> {
+  const out: Record<string, boolean> = {};
+  let cursor = 0;
+  async function worker() {
+    while (cursor < urls.length) {
+      const idx = cursor++;
+      const u = urls[idx];
+      out[u] = await checkUrl(u);
+    }
+  }
+  const workers = Array.from(
+    { length: Math.min(LINK_CHECK_CONCURRENCY, urls.length) },
+    worker,
+  );
+  await Promise.all(workers);
+  return out;
+}
+
+/**
+ * Walk every `[Label](URL)` link in the report and replace broken ones with
+ * `[Label] *(Link nicht erreichbar)*` so the claim survives but the dead URL
+ * does not. Bot-protection 4xx responses are treated as live to avoid false
+ * positives on Reddit / X / paywalled news sites.
+ */
+export async function verifyAndAnnotateLinks(
+  markdown: string,
+): Promise<{ report: string; brokenUrls: string[] }> {
+  const urls = extractMarkdownLinkUrls(markdown);
+  if (urls.length === 0) return { report: markdown, brokenUrls: [] };
+  const status = await checkUrlsConcurrent(urls);
+  const brokenUrls = urls.filter((u) => status[u] === false);
+  if (brokenUrls.length === 0) return { report: markdown, brokenUrls: [] };
+  const brokenSet = new Set(brokenUrls);
+  const rewritten = markdown.replace(
+    MARKDOWN_LINK_RE,
+    (full, label: string, url: string) =>
+      brokenSet.has(url) ? `${label} ${BROKEN_LINK_NOTE}` : full,
+  );
+  return { report: rewritten, brokenUrls };
 }

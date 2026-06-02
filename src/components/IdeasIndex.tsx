@@ -30,16 +30,16 @@ function describe(status: string): StatusBadge {
   switch (status) {
     case "done":
     case "ready":
-      return { label: "Ready", tone: "done" };
+      return { label: "Fertig", tone: "done" };
     case "running":
     case "processing":
-      return { label: "Analyzing…", tone: "running" };
+      return { label: "Wird analysiert…", tone: "running" };
     case "failed":
     case "error":
-      return { label: "Failed", tone: "failed" };
+      return { label: "Fehlgeschlagen", tone: "failed" };
     case "queued":
     default:
-      return { label: "Queued", tone: "queued" };
+      return { label: "In Warteschlange", tone: "queued" };
   }
 }
 
@@ -160,18 +160,18 @@ export default function IdeasIndex({
 
   if (!hydrated) {
     return (
-      <p className="text-sm text-[color:var(--foreground-muted)]">Loading…</p>
+      <p className="text-sm text-[color:var(--foreground-muted)]">Lädt…</p>
     );
   }
   if (knownIds.length === 0) {
     return (
       <section className="rounded-2xl border border-dashed border-[color:var(--border-strong)] bg-[color:var(--surface)] p-8 text-center text-sm text-[color:var(--foreground-muted)]">
-        No ideas yet.{" "}
+        Noch keine Ideen.{" "}
         <Link
           href="/validieren"
           className="font-medium text-[color:var(--brand-ink)] underline-offset-2 hover:underline"
         >
-          Submit one
+          Reiche eine ein
         </Link>
         .
       </section>
@@ -198,15 +198,15 @@ export default function IdeasIndex({
     <div className="flex flex-col gap-4">
       {error ? (
         <p className="rounded-xl border border-rose-300/70 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/50 dark:text-rose-300">
-          Status update failed: {error} (will retry)
+          Statusaktualisierung fehlgeschlagen: {error} (wird erneut versucht)
         </p>
       ) : null}
       {submittedOrdered.length > 0 ? (
-        <Section title="Just submitted" ids={submittedOrdered} statuses={statuses} />
+        <Section title="Gerade eingereicht" ids={submittedOrdered} statuses={statuses} />
       ) : null}
       {favoriteOrdered.length > 0 ? (
         <Section
-          title="Favorites"
+          title="Favoriten"
           ids={favoriteOrdered}
           statuses={statuses}
           starred
@@ -214,7 +214,7 @@ export default function IdeasIndex({
       ) : null}
       {otherOrdered.length > 0 ? (
         <Section
-          title="Previous ideas"
+          title="Frühere Ideen"
           ids={otherOrdered}
           statuses={statuses}
         />
@@ -239,7 +239,7 @@ function Section({
       <div className="flex items-center justify-between pb-1">
         <h2 className="eyebrow">{title}</h2>
         <span className="text-[11px] text-[color:var(--foreground-muted)]">
-          {ids.length} {ids.length === 1 ? "idea" : "ideas"}
+          {ids.length} {ids.length === 1 ? "Idee" : "Ideen"}
         </span>
       </div>
       <ul className="flex flex-col divide-y divide-[color:var(--border)]">
@@ -247,7 +247,7 @@ function Section({
           const idea = statuses[id];
           const badge = idea ? describe(idea.status) : { label: "…", tone: "queued" as const };
           const previewSource = idea?.raw_text_preview ?? "";
-          const preview = previewSource ? buildIdeaPreview(previewSource) : "(loading…)";
+          const preview = previewSource ? buildIdeaPreview(previewSource) : "(lädt…)";
           const submittedAt = idea?.created_at;
           return (
             <li key={id}>

@@ -24,7 +24,7 @@ export default function FavoriteButton({ id }: { id: string }) {
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      aria-label={active ? "Remove from favorites" : "Save as good"}
+      aria-label={active ? "Aus Favoriten entfernen" : "Als gut markieren"}
       className={
         "no-print inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium shadow-sm transition " +
         (active
@@ -45,7 +45,7 @@ export default function FavoriteButton({ id }: { id: string }) {
       >
         <polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18 5.5 22 7 14.5 2 9.5 9 9 12 2" />
       </svg>
-      <span>{hydrated && active ? "Saved" : "Save as good"}</span>
+      <span>{hydrated && active ? "Gespeichert" : "Als gut markieren"}</span>
     </button>
   );
 }

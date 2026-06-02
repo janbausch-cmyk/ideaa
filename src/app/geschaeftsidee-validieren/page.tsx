@@ -30,6 +30,18 @@ export const metadata: Metadata = {
 
 const FAQ: Array<{ q: string; a: string }> = [
   {
+    q: "Wie validiere ich eine Geschäftsidee?",
+    a: "Du prüfst systematisch vier Dinge: Gibt es einen echten Markt und eine zahlende Zielgruppe? Wer ist die Konkurrenz — und wo ist die Lücke? Welche Annahmen müssen stimmen? Und was würde die Idee scheitern lassen? Genau diese Schritte nimmt IDEAA dir ab und fasst sie in 60 bis 90 Sekunden zu einem strukturierten Bericht zusammen.",
+  },
+  {
+    q: "Woran erkenne ich, ob meine Geschäftsidee Potenzial hat?",
+    a: "Gute Indikatoren sind ein klar benennbares Problem, eine Zielgruppe mit erkennbarer Zahlungsbereitschaft und ein Markt, der groß genug, aber nicht hoffnungslos überfüllt ist. IDEAA bewertet genau diese Faktoren und macht die größten Risiken sichtbar, bevor du Zeit oder Geld investierst.",
+  },
+  {
+    q: "Reicht eine KI-Validierung, oder muss ich mit echten Kunden sprechen?",
+    a: "Beides gehört zusammen. IDEAA gibt dir in Minuten eine fundierte erste Einschätzung zu Markt, Wettbewerb und Risiken, damit du nicht bei null anfängst. Den finalen Beweis liefern aber immer echte Kundengespräche und ein Vorverkauf — der Bericht sagt dir, was du als Erstes mit Kunden testen solltest.",
+  },
+  {
     q: "Was kostet die Validierung?",
     a: "Aktuell nichts. IDEAA ist in der frühen Produktphase — du erhältst den vollständigen Validierungsbericht ohne Anmeldung oder Bezahlung.",
   },

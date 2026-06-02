@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import IdeasIndex from "@/components/IdeasIndex";
 
 export const dynamic = "force-dynamic";
+
+// Private Nutzerinhalte: aus Suchmaschinen heraushalten (Datenschutz +
+// kein Abgreifen der Berichte über die Google-Suche).
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -28,17 +35,17 @@ export default async function IdeasIndexPage({
       <div className="flex w-full max-w-2xl flex-col gap-6">
         <header className="flex flex-col gap-2">
           <Link
-            href="/"
+            href="/validieren"
             className="inline-flex w-fit items-center gap-1 text-sm font-medium text-[color:var(--foreground-muted)] transition hover:text-[color:var(--brand-ink)]"
           >
-            <span aria-hidden>←</span> New idea
+            <span aria-hidden>←</span> Neue Idee
           </Link>
           <h1 className="text-3xl font-bold tracking-tight text-[color:var(--foreground)] sm:text-4xl">
-            Your ideas
+            Deine Ideen
           </h1>
           <p className="text-sm text-[color:var(--foreground-muted)]">
-            Status updates live every few seconds. Click any ready idea to
-            open its report.
+            Der Status aktualisiert sich live im Sekundentakt. Klicke auf eine
+            fertige Idee, um ihren Bericht zu öffnen.
           </p>
         </header>
 

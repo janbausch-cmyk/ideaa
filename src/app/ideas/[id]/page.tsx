@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
@@ -10,6 +11,12 @@ import RecordHistoryEntry from "@/components/RecordHistoryEntry";
 import { getIdea } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
+
+// Private Nutzerinhalte (Idee + Bericht): aus Suchmaschinen heraushalten,
+// damit Berichte nicht über die Google-Suche auffindbar/abgreifbar sind.
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 const PLAN_HEADING_RE = /(^|\n)##\s*7\.\s/;
 
@@ -38,32 +45,32 @@ function describeStatus(status: string): StatusInfo {
     case "ready":
     case "done":
       return {
-        label: "Ready",
-        description: "Your validation report is ready below.",
+        label: "Fertig",
+        description: "Dein Validierungsbericht steht unten bereit.",
         tone: "ready",
       };
     case "failed":
     case "error":
       return {
-        label: "Failed",
+        label: "Fehlgeschlagen",
         description:
-          "Something went wrong while analysing this idea. Try resubmitting from the home page.",
+          "Bei der Analyse dieser Idee ist etwas schiefgelaufen. Versuche, sie über das Formular erneut einzureichen.",
         tone: "failed",
       };
     case "queued":
       return {
-        label: "Queued",
+        label: "In Warteschlange",
         description:
-          "Your idea is queued and will be picked up by a worker shortly. This page refreshes automatically.",
+          "Deine Idee ist in der Warteschlange und wird in Kürze von einem Worker übernommen. Diese Seite aktualisiert sich automatisch.",
         tone: "processing",
       };
     case "running":
     case "processing":
     default:
       return {
-        label: "Analyzing",
+        label: "Wird analysiert",
         description:
-          "We're analysing your idea. This page refreshes automatically when the report is ready — usually under 60 seconds.",
+          "Wir analysieren deine Idee. Diese Seite aktualisiert sich automatisch, sobald der Bericht fertig ist — meist in unter 60 Sekunden.",
         tone: "processing",
       };
   }
@@ -81,7 +88,7 @@ export default async function IdeaPage({
   }
   const status = describeStatus(idea.status);
   const submittedAtDate = new Date(idea.created_at);
-  const submittedAt = submittedAtDate.toLocaleString();
+  const submittedAt = submittedAtDate.toLocaleString("de-DE");
   const submittedAtIso = submittedAtDate.toISOString();
   const isProcessing = status.tone === "processing";
   const isReady = status.tone === "ready";
@@ -99,21 +106,21 @@ export default async function IdeaPage({
       <div className="flex w-full max-w-2xl flex-col gap-6">
         <header className="flex flex-col gap-2">
           <Link
-            href="/"
+            href="/validieren"
             className="no-print inline-flex w-fit items-center gap-1 text-sm font-medium text-[color:var(--foreground-muted)] transition hover:text-[color:var(--brand-ink)]"
           >
-            <span aria-hidden>←</span> New idea
+            <span aria-hidden>←</span> Neue Idee
           </Link>
           <div className="flex flex-wrap items-baseline gap-3">
             <h1 className="text-3xl font-bold tracking-tight text-[color:var(--foreground)] sm:text-4xl">
-              Idea
+              Idee
             </h1>
             <code className="rounded-md bg-[color:var(--surface-muted)] px-2 py-0.5 font-mono text-xs text-[color:var(--foreground-muted)]">
               #{idea.id.slice(0, 8)}
             </code>
           </div>
           <p className="text-xs text-[color:var(--foreground-muted)]">
-            Submitted {submittedAt}
+            Eingereicht am {submittedAt}
           </p>
         </header>
 
@@ -157,13 +164,13 @@ export default async function IdeaPage({
             </p>
           ) : null}
           <p className="text-xs text-[color:var(--foreground-muted)]">
-            Bookmark or share this URL — it always shows the latest state for
-            this idea.
+            Speichere oder teile diese URL — sie zeigt immer den aktuellen
+            Stand dieser Idee.
           </p>
         </section>
 
         <section className="surface-card flex flex-col gap-2 p-5">
-          <h2 className="eyebrow">Your idea</h2>
+          <h2 className="eyebrow">Deine Idee</h2>
           <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-[color:var(--foreground)]">
             {idea.raw_text}
           </pre>
@@ -175,7 +182,7 @@ export default async function IdeaPage({
               return (
                 <>
                   <section className="surface-card flex flex-col gap-3 p-6 sm:p-7">
-                    <h2 className="eyebrow">Validation report</h2>
+                    <h2 className="eyebrow">Validierungsbericht</h2>
                     <article className="analysis-report">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {report}
@@ -184,7 +191,7 @@ export default async function IdeaPage({
                   </section>
                   {plan ? (
                     <section className="surface-card flex flex-col gap-3 p-6 sm:p-7">
-                      <h2 className="eyebrow">Implementation plan</h2>
+                      <h2 className="eyebrow">Umsetzungsplan</h2>
                       <article className="analysis-report">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                           {plan}

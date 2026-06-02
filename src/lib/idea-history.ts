@@ -77,16 +77,16 @@ export function formatRelativeTime(iso: string, now: Date = new Date()): string 
   if (isNaN(then.getTime())) return "";
   const diffMs = now.getTime() - then.getTime();
   const sec = Math.round(diffMs / 1000);
-  if (sec < 5) return "just now";
-  if (sec < 60) return `${sec}s ago`;
+  if (sec < 5) return "gerade eben";
+  if (sec < 60) return `vor ${sec}s`;
   const min = Math.round(sec / 60);
-  if (min < 60) return `${min}m ago`;
+  if (min < 60) return `vor ${min}min`;
   const hr = Math.round(min / 60);
-  if (hr < 24) return `${hr}h ago`;
+  if (hr < 24) return `vor ${hr}h`;
   const day = Math.round(hr / 24);
-  if (day < 7) return `${day}d ago`;
-  if (day < 30) return `${Math.round(day / 7)}w ago`;
-  return then.toLocaleDateString(undefined, {
+  if (day < 7) return `vor ${day}d`;
+  if (day < 30) return `vor ${Math.round(day / 7)}Wo.`;
+  return then.toLocaleDateString("de-DE", {
     month: "short",
     day: "numeric",
     year: now.getFullYear() === then.getFullYear() ? undefined : "numeric",

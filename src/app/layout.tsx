@@ -24,21 +24,21 @@ export const metadata: Metadata = {
   verification: googleSiteVerification
     ? { google: googleSiteVerification }
     : undefined,
-  title: "IDEAA — paste an idea, get a validation report",
+  title: "IDEAA — Idee einfügen, Validierungsbericht erhalten",
   description:
-    "Turn raw ideas into validated, actionable business opportunities with AI-assisted analysis and implementation planning.",
+    "Mach aus rohen Ideen validierte, umsetzbare Geschäftschancen — mit KI-gestützter Analyse und Umsetzungsplan.",
   openGraph: {
-    title: "IDEAA — paste an idea, get a validation report",
+    title: "IDEAA — Idee einfügen, Validierungsbericht erhalten",
     description:
-      "Turn raw ideas into validated, actionable business opportunities with AI-assisted analysis and implementation planning.",
+      "Mach aus rohen Ideen validierte, umsetzbare Geschäftschancen — mit KI-gestützter Analyse und Umsetzungsplan.",
     siteName: "IDEAA",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "IDEAA — paste an idea, get a validation report",
+    title: "IDEAA — Idee einfügen, Validierungsbericht erhalten",
     description:
-      "Turn raw ideas into validated, actionable business opportunities with AI-assisted analysis and implementation planning.",
+      "Mach aus rohen Ideen validierte, umsetzbare Geschäftschancen — mit KI-gestützter Analyse und Umsetzungsplan.",
   },
 };
 
@@ -49,7 +49,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="de"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">{children}</body>

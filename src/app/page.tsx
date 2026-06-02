@@ -117,6 +117,16 @@ export default async function Home({
           No accounts needed. Each idea is saved at its own shareable URL you
           can return to.
         </p>
+
+        <p className="text-center text-xs text-[color:var(--foreground-muted)]">
+          <Link
+            href="/geschaeftsidee-validieren"
+            className="hover:underline"
+            hrefLang="de"
+          >
+            Deutsch: Geschäftsidee validieren →
+          </Link>
+        </p>
       </div>
     </main>
   );

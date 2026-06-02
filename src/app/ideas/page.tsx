@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import IdeasIndex from "@/components/IdeasIndex";
 
 export const dynamic = "force-dynamic";
+
+// Private Nutzerinhalte: aus Suchmaschinen heraushalten (Datenschutz +
+// kein Abgreifen der Berichte über die Google-Suche).
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 type SearchParams = Record<string, string | string[] | undefined>;
 

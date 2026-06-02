@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
@@ -10,6 +11,12 @@ import RecordHistoryEntry from "@/components/RecordHistoryEntry";
 import { getIdea } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
+
+// Private Nutzerinhalte (Idee + Bericht): aus Suchmaschinen heraushalten,
+// damit Berichte nicht über die Google-Suche auffindbar/abgreifbar sind.
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 const PLAN_HEADING_RE = /(^|\n)##\s*7\.\s/;
 

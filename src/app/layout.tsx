@@ -17,8 +17,13 @@ const siteUrl =
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ??
   "https://ideaa.app";
 
+const googleSiteVerification = process.env.GOOGLE_SITE_VERIFICATION;
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
+  verification: googleSiteVerification
+    ? { google: googleSiteVerification }
+    : undefined,
   title: "IDEAA — paste an idea, get a validation report",
   description:
     "Turn raw ideas into validated, actionable business opportunities with AI-assisted analysis and implementation planning.",

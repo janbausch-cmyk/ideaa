@@ -99,7 +99,7 @@ export default async function IdeaPage({
       <div className="flex w-full max-w-2xl flex-col gap-6">
         <header className="flex flex-col gap-2">
           <Link
-            href="/"
+            href="/validieren"
             className="no-print inline-flex w-fit items-center gap-1 text-sm font-medium text-[color:var(--foreground-muted)] transition hover:text-[color:var(--brand-ink)]"
           >
             <span aria-hidden>←</span> New idea

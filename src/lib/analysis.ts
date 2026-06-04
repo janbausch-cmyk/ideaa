@@ -11,7 +11,11 @@ import {
 } from "./db";
 
 const ANALYSIS_MODEL = "claude-opus-4-7";
-const MAX_TOKENS = 4000;
+// 4000 war zu eng für NL/DE-Berichte mit voller §1–§9-Struktur und ~12 web_search-
+// Roundtrips. Idee 81cc3042 brach mitten in §7 ab, §8/§9 fehlten ganz. 8000
+// gibt Puffer, ohne die Kosten pro Bericht spürbar zu erhöhen (Output-Pricing
+// rechnet nach actual tokens used, nicht nach diesem cap).
+const MAX_TOKENS = 8000;
 const MAX_SEARCHES = 20;
 const LINK_CHECK_TIMEOUT_MS = 4000;
 const LINK_CHECK_CONCURRENCY = 8;

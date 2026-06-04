@@ -12,7 +12,7 @@ import {
 } from "./db";
 
 const DEEPDIVE_MODEL = "claude-sonnet-4-6";
-const MAX_TOKENS = 4500;
+const MAX_TOKENS = 8000;
 const MAX_SEARCHES = 8;
 
 let cachedClient: Anthropic | null = null;

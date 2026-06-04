@@ -7,6 +7,7 @@ import remarkGfm from "remark-gfm";
 import BrandWordmark from "@/components/BrandWordmark";
 import CopyLinkButton from "@/components/CopyLinkButton";
 import FavoriteButton from "@/components/FavoriteButton";
+import LegalFooter from "@/components/LegalFooter";
 import PrintButton from "@/components/PrintButton";
 import RecordHistoryEntry from "@/components/RecordHistoryEntry";
 import { getIdea } from "@/lib/db";
@@ -214,6 +215,10 @@ export default async function IdeaPage({
               );
             })()
           : null}
+
+        <div className="no-print pt-2">
+          <LegalFooter />
+        </div>
       </div>
     </main>
   );

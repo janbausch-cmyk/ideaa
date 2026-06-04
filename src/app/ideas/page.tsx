@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import BrandWordmark from "@/components/BrandWordmark";
 import IdeasIndex from "@/components/IdeasIndex";
+import LegalFooter from "@/components/LegalFooter";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +58,8 @@ export default async function IdeasIndexPage({
         </header>
 
         <IdeasIndex submittedIds={submittedIds} />
+
+        <LegalFooter />
       </div>
     </main>
   );

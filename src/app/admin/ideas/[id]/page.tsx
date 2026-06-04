@@ -310,21 +310,33 @@ export default async function AdminIdeaDetailPage({
 
       {idea.analysis_report && (
         <section className="surface-card p-5">
-          <h2 className="eyebrow">Analyse-Output (Markdown)</h2>
-          <pre className="mt-3 max-h-[60vh] overflow-auto whitespace-pre-wrap break-words rounded-xl bg-[color:var(--surface-muted)] p-4 font-mono text-xs text-[color:var(--foreground)]">
-            {idea.analysis_report}
-          </pre>
+          <h2 className="eyebrow">Validierungsbericht</h2>
+          <article className="analysis-report mt-3">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {idea.analysis_report}
+            </ReactMarkdown>
+          </article>
+          <details className="mt-4 text-xs text-[color:var(--foreground-muted)]">
+            <summary className="cursor-pointer select-none font-medium hover:text-[color:var(--brand-ink)]">
+              Markdown-Source anzeigen
+            </summary>
+            <pre className="mt-2 max-h-[40vh] overflow-auto whitespace-pre-wrap break-words rounded-xl bg-[color:var(--surface-muted)] p-4 font-mono text-xs text-[color:var(--foreground)]">
+              {idea.analysis_report}
+            </pre>
+          </details>
         </section>
       )}
 
       {idea.analysis_tool_trace && idea.analysis_tool_trace.length > 0 && (
         <section className="surface-card p-5">
-          <h2 className="eyebrow">
-            Tool-Trace ({idea.analysis_tool_trace.length} Einträge)
-          </h2>
-          <pre className="mt-3 max-h-[40vh] overflow-auto whitespace-pre-wrap break-words rounded-xl bg-[color:var(--surface-muted)] p-4 font-mono text-xs text-[color:var(--foreground)]">
-            {JSON.stringify(idea.analysis_tool_trace, null, 2)}
-          </pre>
+          <details>
+            <summary className="eyebrow cursor-pointer select-none hover:text-[color:var(--brand-ink)]">
+              Tool-Trace ({idea.analysis_tool_trace.length} Einträge)
+            </summary>
+            <pre className="mt-3 max-h-[40vh] overflow-auto whitespace-pre-wrap break-words rounded-xl bg-[color:var(--surface-muted)] p-4 font-mono text-xs text-[color:var(--foreground)]">
+              {JSON.stringify(idea.analysis_tool_trace, null, 2)}
+            </pre>
+          </details>
         </section>
       )}
 

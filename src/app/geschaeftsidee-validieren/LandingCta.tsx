@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-const TARGET = "/?ref=landing-de";
+const TARGET = "/?ref=geschaeftsidee-validieren";
 
 function track() {
   try {

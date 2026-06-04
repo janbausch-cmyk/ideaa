@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 
 import BrandWordmark from "@/components/BrandWordmark";
-import LandingCta from "@/components/LandingCta";
+import LegalFooter from "@/components/LegalFooter";
+
+import LandingCta from "./LandingCta";
 
 const PAGE_PATH = "/geschaeftsidee-validieren";
 const TITLE = "Geschäftsidee validieren: Marktcheck und Plan in 2 Minuten | IDEAA";
@@ -331,8 +333,9 @@ export default function LandingPage() {
           </LandingCta>
         </section>
 
-        <footer className="pb-6 text-center text-xs text-[color:var(--foreground-muted)]">
-          IDEAA: Idee einfügen, Validierungsbericht bekommen.
+        <footer className="flex flex-col items-center gap-3 pb-6 text-center text-xs text-[color:var(--foreground-muted)]">
+          <p>IDEAA: Idee einfügen, Validierungsbericht bekommen.</p>
+          <LegalFooter />
         </footer>
       </div>
     </main>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import BrandWordmark from "@/components/BrandWordmark";
+import LegalFooter from "@/components/LegalFooter";
 import PreviousIdeasList from "@/components/PreviousIdeasList";
 
 import { submitIdea } from "./actions";
@@ -119,6 +120,8 @@ export default async function Home({
           Kein Account nötig. Jede Idee bekommt eine eigene URL, die du
           speichern oder weitergeben kannst.
         </p>
+
+        <LegalFooter />
       </div>
     </main>
   );

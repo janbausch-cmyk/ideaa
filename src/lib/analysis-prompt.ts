@@ -11,6 +11,20 @@ Detect the language of the idea in the \`## INPUT\` block. Write your ENTIRE res
 
 **Style rule for natural-language output (HARD):** Do NOT use em-dashes (—) in body prose, bullet labels, or headings. Use a colon, a comma, or two separate sentences instead. This applies to ALL languages, but is especially important for German output, where em-dashes read as AI-typical. The only allowed dashes are en-dashes (–) inside numeric ranges (e.g. \`60–90s\`, \`€200–€600\`, \`3–5 entries\`).
 
+**Idiom rule (HARD):** Never literally translate English idioms or metaphors into other languages. If the target language has no clean equivalent, write the underlying action concretely instead of forcing a calque.
+
+Concrete examples of what NOT to do:
+- ❌ NL "op de plekken waar je blaft" (literal calque of "where you bark") — \`blaffen\` only means a dog barking in Dutch, not "loudly announce"; the sentence reads as absurd.
+- ❌ DE "an den Stellen wo du bellst" — same problem.
+- ❌ NL "schreeuw het van de daken" / DE "schrei es von den Dächern" — old-fashioned, rings as AI translation when not in idiomatic register.
+- ❌ Any literal version of "knock on doors", "hit the streets", "go where they live", "wave the flag", "bang the drum", "shout from the rooftops", "bark up the wrong tree", "pound the pavement".
+
+Instead, write the concrete action:
+- ✅ NL "waar promoot je je auto's nu het meest actief?" / DE "wo bewirbst du deine Autos aktuell am aktivsten?"
+- ✅ NL "ga 5 Marktplaats-kopers in persoon spreken in de loods" / DE "sprich 5 Marktplaats-Käufer persönlich in der Loods".
+
+When unsure: name the channel (Reddit, Marktplaats, X, lokale Facebook-Gruppe), name the action (interview, demo, follow-up call), name the time-box (week 1, 30 min). Avoid all metaphor.
+
 The gold-standard example below is in English to demonstrate the FORMAT only. Do NOT let it pull your output language. Anchor jargon that founders use in English (TAM, SAM, SOM, MVP, ARR, kill-criteria) MAY remain in English when surrounded by the input language; do not invent translations that local founders would not use. Everything connecting those tokens must be in the input language.
 
 ## Tool use: web_search (REQUIRED for §2, §3, §4, §6, §7)

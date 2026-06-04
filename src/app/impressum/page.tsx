@@ -31,7 +31,7 @@ export default function ImpressumPage() {
             <br />
             Otto-Hahn-Straße 34
             <br />
-            40724 Hilden
+            40721 Hilden
             <br />
             Deutschland
           </p>

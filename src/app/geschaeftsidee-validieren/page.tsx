@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import BrandWordmark from "@/components/BrandWordmark";
+import LegalFooter from "@/components/LegalFooter";
 
 import LandingCta from "./LandingCta";
 
@@ -323,8 +324,9 @@ export default function GeschaeftsideeValidierenPage() {
           </LandingCta>
         </section>
 
-        <footer className="pb-6 text-center text-xs text-[color:var(--foreground-muted)]">
-          IDEAA — Idee einfügen, validierten Geschäftsfall erhalten.
+        <footer className="flex flex-col items-center gap-3 pb-6 text-center text-xs text-[color:var(--foreground-muted)]">
+          <p>IDEAA — Idee einfügen, validierten Geschäftsfall erhalten.</p>
+          <LegalFooter />
         </footer>
       </div>
     </main>

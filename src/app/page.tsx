@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import BrandWordmark from "@/components/BrandWordmark";
+import LegalFooter from "@/components/LegalFooter";
 import PreviousIdeasList from "@/components/PreviousIdeasList";
 
 import { submitIdea } from "./actions";
@@ -127,6 +128,8 @@ export default async function Home({
             Deutsch: Geschäftsidee validieren →
           </Link>
         </p>
+
+        <LegalFooter />
       </div>
     </main>
   );

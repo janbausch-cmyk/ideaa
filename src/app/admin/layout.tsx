@@ -15,7 +15,7 @@ export default async function AdminLayout({
   const authenticated = await isAdminAuthenticated();
   return (
     <div className="min-h-full bg-[color:var(--background)] text-[color:var(--foreground)]">
-      <header className="sticky top-0 z-20 border-b border-[color:var(--border)] bg-[color:var(--surface)]/85 backdrop-blur supports-[backdrop-filter]:bg-[color:var(--surface)]/70">
+      <header className="no-print sticky top-0 z-20 border-b border-[color:var(--border)] bg-[color:var(--surface)]/85 backdrop-blur supports-[backdrop-filter]:bg-[color:var(--surface)]/70">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-5">
             <Link

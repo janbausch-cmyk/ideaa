@@ -129,6 +129,26 @@ export default async function AdminIdeaDetailPage({
           >
             Öffentliche Ansicht ↗
           </Link>
+          {idea.analysis_report ? (
+            <a
+              href={`/admin/ideas/${idea.id}/print/report`}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-3.5 py-1.5 text-sm font-medium shadow-sm transition hover:border-[color:var(--brand-ink)]/40 hover:text-[color:var(--brand-ink)]"
+            >
+              Bericht als PDF ↗
+            </a>
+          ) : null}
+          {idea.deepdive_report ? (
+            <a
+              href={`/admin/ideas/${idea.id}/print/deepdive`}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-3.5 py-1.5 text-sm font-medium shadow-sm transition hover:border-[color:var(--brand-ink)]/40 hover:text-[color:var(--brand-ink)]"
+            >
+              Ausarbeitung als PDF ↗
+            </a>
+          ) : null}
           <a
             href={`/api/admin/analyze/${idea.id}`}
             target="_blank"

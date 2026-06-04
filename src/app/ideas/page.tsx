@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import BrandWordmark from "@/components/BrandWordmark";
 import IdeasIndex from "@/components/IdeasIndex";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +34,12 @@ export default async function IdeasIndexPage({
   return (
     <main className="app-backdrop flex min-h-screen flex-col items-center px-6 py-12 sm:py-16">
       <div className="flex w-full max-w-2xl flex-col gap-6">
+        <Link href="/geschaeftsidee-validieren" aria-label="IDEAA, zur Startseite">
+          <BrandWordmark
+            className="brand-peak h-8 w-auto transition hover:opacity-80 sm:h-10"
+            title="IDEAA"
+          />
+        </Link>
         <header className="flex flex-col gap-2">
           <Link
             href="/"

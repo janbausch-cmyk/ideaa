@@ -66,7 +66,11 @@ async function cmdHelp(args: {
     "• `/status` — kurzer Health-Check der Bridge",
     "• `/new <titel>` — neues Issue anlegen (zugewiesen an dich, du delegierst weiter)",
     "",
-    "Sonst: Text-Antwort wird Kommentar auf dem aktiven Issue. Mit `#IDEAA-XX` taggst du ein Issue, danach landen Folge-Antworten ohne Tag dort.",
+    "Freier Text wird automatisch geroutet:",
+    "• Liest sich wie eine Geschäftsidee → landet in IDEAA, du bekommst den Bericht-Link",
+    "• Liest sich wie ein To-Do → wird als Paperclip-Issue angelegt",
+    "• Liest sich wie eine Frage → ich antworte direkt",
+    "• Sonst (oder mit `#IDEAA-XX` getaggt) → Kommentar auf dem aktiven Issue",
   ];
   await sendMessage({
     chat_id: args.chatId,

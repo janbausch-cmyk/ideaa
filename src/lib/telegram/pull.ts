@@ -21,6 +21,9 @@ import {
   type IssueSummary,
 } from "./paperclip";
 import { dispatchCommand } from "./commands";
+import { handleIdeaSubmit } from "./handle-idea";
+import { handleTaskCreate } from "./handle-task";
+import { answerQuestion, classifyIntent } from "./router";
 import { transcribeAudio } from "./whisper";
 import { getTelegramConfig, isAllowedTelegramUser, paperclipIssueUrl } from "./config";
 
@@ -85,13 +88,93 @@ export async function handleUpdate(update: TelegramUpdate): Promise<{
     });
   }
 
-  return handleTextReply({
+  // Explicit #IDEAA-XX tag bypasses the LLM router (legacy direct path).
+  if (ISSUE_TAG_RE.test(text)) {
+    return handleTextReply({
+      telegramUserId: msg.from.id,
+      chatId: msg.chat.id,
+      messageId: msg.message_id,
+      text,
+      config,
+    });
+  }
+
+  // Free-form text: ask Haiku what the user wants.
+  return handleRoutedMessage({
     telegramUserId: msg.from.id,
     chatId: msg.chat.id,
     messageId: msg.message_id,
     text,
     config,
   });
+}
+
+async function handleRoutedMessage(args: {
+  telegramUserId: number;
+  chatId: number;
+  messageId: number;
+  text: string;
+  config: ReturnType<typeof getTelegramConfig>;
+}): Promise<{ ok: boolean; action: string; detail?: string }> {
+  const { telegramUserId, chatId, messageId, text, config } = args;
+  const ctx = await getActiveIssueContext(telegramUserId);
+  const intent = await classifyIntent({
+    text,
+    hasActiveIssue: !!ctx?.active_issue_id,
+  });
+
+  switch (intent.kind) {
+    case "idea":
+      return handleIdeaSubmit({
+        chatId,
+        messageId,
+        ideaText: intent.ideaText,
+      });
+    case "task":
+      return handleTaskCreate({
+        telegramUserId,
+        chatId,
+        messageId,
+        title: intent.title,
+      });
+    case "comment":
+      return handleTextReply({
+        telegramUserId,
+        chatId,
+        messageId,
+        text,
+        config,
+      });
+    case "question": {
+      try {
+        const answer = await answerQuestion(text);
+        await sendMessage({
+          chat_id: chatId,
+          text: answer || "Konnte keine Antwort generieren.",
+          reply_to_message_id: messageId,
+        });
+        return { ok: true, action: "question:answered" };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        await sendMessage({
+          chat_id: chatId,
+          text: `⚠️ Antwort fehlgeschlagen: ${message.slice(0, 240)}`,
+          reply_to_message_id: messageId,
+        });
+        return { ok: true, action: "question:failed", detail: message };
+      }
+    }
+    case "unclear":
+    default: {
+      await sendMessage({
+        chat_id: chatId,
+        text:
+          'Bin nicht sicher, was du willst. Versuch\'s konkret: "Idee: ..." für eine Validierung, "Aufgabe: ..." für ein Paperclip-Issue, oder ein Slash-Befehl (/help).',
+        reply_to_message_id: messageId,
+      });
+      return { ok: true, action: "router:unclear" };
+    }
+  }
 }
 
 async function handleTextReply(args: {

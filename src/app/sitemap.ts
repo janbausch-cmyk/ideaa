@@ -15,5 +15,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 1,
     },
+    {
+      url: `${SITE}/geschaeftsidee-validieren`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
   ];
 }

@@ -46,7 +46,7 @@ function describeStatus(status: string): StatusInfo {
     case "done":
       return {
         label: "Fertig",
-        description: "Dein Validierungsbericht steht unten bereit.",
+        description: "Dein Bericht steht unten.",
         tone: "ready",
       };
     case "failed":
@@ -54,14 +54,14 @@ function describeStatus(status: string): StatusInfo {
       return {
         label: "Fehlgeschlagen",
         description:
-          "Bei der Analyse dieser Idee ist etwas schiefgelaufen. Versuche, sie über das Formular erneut einzureichen.",
+          "Bei der Analyse ist etwas schiefgelaufen. Reiche die Idee bitte noch einmal ein.",
         tone: "failed",
       };
     case "queued":
       return {
         label: "In Warteschlange",
         description:
-          "Deine Idee ist in der Warteschlange und wird in Kürze von einem Worker übernommen. Diese Seite aktualisiert sich automatisch.",
+          "Deine Idee wartet auf den nächsten freien Worker. Die Seite aktualisiert sich automatisch.",
         tone: "processing",
       };
     case "running":
@@ -70,7 +70,7 @@ function describeStatus(status: string): StatusInfo {
       return {
         label: "Wird analysiert",
         description:
-          "Wir analysieren deine Idee. Diese Seite aktualisiert sich automatisch, sobald der Bericht fertig ist — meist in unter 60 Sekunden.",
+          "Wir analysieren deine Idee. Die Seite aktualisiert sich automatisch, meist in unter 60 Sekunden.",
         tone: "processing",
       };
   }
@@ -106,7 +106,7 @@ export default async function IdeaPage({
       <div className="flex w-full max-w-2xl flex-col gap-6">
         <header className="flex flex-col gap-2">
           <Link
-            href="/validieren"
+            href="/"
             className="no-print inline-flex w-fit items-center gap-1 text-sm font-medium text-[color:var(--foreground-muted)] transition hover:text-[color:var(--brand-ink)]"
           >
             <span aria-hidden>←</span> Neue Idee
@@ -152,7 +152,7 @@ export default async function IdeaPage({
               }
             />
             <h2 className="eyebrow !text-[color:var(--foreground)]">
-              Status — {status.label}
+              Status: {status.label}
             </h2>
           </div>
           <p className="text-sm text-[color:var(--foreground)]">
@@ -164,8 +164,8 @@ export default async function IdeaPage({
             </p>
           ) : null}
           <p className="text-xs text-[color:var(--foreground-muted)]">
-            Speichere oder teile diese URL — sie zeigt immer den aktuellen
-            Stand dieser Idee.
+            Speicher die URL als Lesezeichen oder gib sie weiter. Sie zeigt
+            immer den aktuellen Stand.
           </p>
         </section>
 

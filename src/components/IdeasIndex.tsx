@@ -168,7 +168,7 @@ export default function IdeasIndex({
       <section className="rounded-2xl border border-dashed border-[color:var(--border-strong)] bg-[color:var(--surface)] p-8 text-center text-sm text-[color:var(--foreground-muted)]">
         Noch keine Ideen.{" "}
         <Link
-          href="/validieren"
+          href="/"
           className="font-medium text-[color:var(--brand-ink)] underline-offset-2 hover:underline"
         >
           Reiche eine ein

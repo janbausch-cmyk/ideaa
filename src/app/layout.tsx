@@ -19,26 +19,27 @@ const siteUrl =
 
 const googleSiteVerification = process.env.GOOGLE_SITE_VERIFICATION;
 
+const SITE_TITLE = "IDEAA: Idee einfügen, Validierungsbericht bekommen";
+const SITE_DESC =
+  "Mach aus rohen Ideen validierte Geschäftschancen, mit KI-gestützter Analyse und Umsetzungsplan.";
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   verification: googleSiteVerification
     ? { google: googleSiteVerification }
     : undefined,
-  title: "IDEAA — Idee einfügen, Validierungsbericht erhalten",
-  description:
-    "Mach aus rohen Ideen validierte, umsetzbare Geschäftschancen — mit KI-gestützter Analyse und Umsetzungsplan.",
+  title: SITE_TITLE,
+  description: SITE_DESC,
   openGraph: {
-    title: "IDEAA — Idee einfügen, Validierungsbericht erhalten",
-    description:
-      "Mach aus rohen Ideen validierte, umsetzbare Geschäftschancen — mit KI-gestützter Analyse und Umsetzungsplan.",
+    title: SITE_TITLE,
+    description: SITE_DESC,
     siteName: "IDEAA",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "IDEAA — Idee einfügen, Validierungsbericht erhalten",
-    description:
-      "Mach aus rohen Ideen validierte, umsetzbare Geschäftschancen — mit KI-gestützter Analyse und Umsetzungsplan.",
+    title: SITE_TITLE,
+    description: SITE_DESC,
   },
 };
 

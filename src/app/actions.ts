@@ -24,19 +24,19 @@ export async function submitIdea(formData: FormData): Promise<void> {
   const raw = formData.get("idea");
   const text = typeof raw === "string" ? raw.trim() : "";
   if (!text) {
-    redirect("/validieren?error=empty");
+    redirect("/?error=empty");
   }
 
   const ideas = splitBatch(text);
   if (ideas.length === 0) {
-    redirect("/validieren?error=empty");
+    redirect("/?error=empty");
   }
   if (ideas.length > MAX_BATCH) {
-    redirect(`/validieren?error=too-many`);
+    redirect(`/?error=too-many`);
   }
   for (const idea of ideas) {
     if (idea.length > MAX_LEN_PER_IDEA) {
-      redirect("/validieren?error=too-long");
+      redirect("/?error=too-long");
     }
   }
 
@@ -45,7 +45,7 @@ export async function submitIdea(formData: FormData): Promise<void> {
     inserted = await insertIdeas(ideas);
   } catch (err) {
     console.error("[submitIdea] insert failed", err);
-    redirect("/validieren?error=insert-failed");
+    redirect("/?error=insert-failed");
   }
 
   // Kick the worker without blocking the response. The tick claims rows via

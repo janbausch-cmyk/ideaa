@@ -28,6 +28,12 @@ export default function ImpressumPage() {
           </h2>
           <p className="text-sm text-[color:var(--foreground-muted)]">
             Jan-Niklas Bausch
+            <br />
+            Otto-Hahn-Straße 34
+            <br />
+            40724 Hilden
+            <br />
+            Deutschland
           </p>
           <p className="text-sm text-[color:var(--foreground-muted)]">
             E-Mail:{" "}

@@ -7,6 +7,7 @@ import remarkGfm from "remark-gfm";
 import BrandWordmark from "@/components/BrandWordmark";
 import CopyLinkButton from "@/components/CopyLinkButton";
 import FavoriteButton from "@/components/FavoriteButton";
+import IdeaStatusPoll from "@/components/IdeaStatusPoll";
 import LegalFooter from "@/components/LegalFooter";
 import PrintButton from "@/components/PrintButton";
 import RecordHistoryEntry from "@/components/RecordHistoryEntry";
@@ -20,20 +21,29 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const PLAN_HEADING_RE = /(^|\n)##\s*7\.\s/;
+// Patterns tried in order. First match wins. Tolerates ## / ### prefixes,
+// `7.` and `7)` separators, plus a heading-text fallback for the case where
+// the LLM drops the number entirely.
+const PLAN_HEADING_PATTERNS: RegExp[] = [
+  /(^|\n)#{1,3}\s*7[.)]\s/,
+  /(^|\n)\*\*\s*7\s*\.\s/,
+  // Multilingual heading-text fallback. Order: EN, DE, NL, ES, FR.
+  /(^|\n)#{1,3}\s*(?:Build feasibility|Umsetzbarkeit|Haalbaarheid|Factibilidad|Faisabilité|Implementation plan|Umsetzungsplan)/i,
+];
 
 function splitReportAndPlan(markdown: string): {
   report: string;
   plan: string | null;
 } {
-  const match = PLAN_HEADING_RE.exec(markdown);
-  if (!match || match.index === undefined) {
-    return { report: markdown.trim(), plan: null };
+  for (const re of PLAN_HEADING_PATTERNS) {
+    const match = re.exec(markdown);
+    if (!match || match.index === undefined) continue;
+    const splitAt = match.index + (match[1] === "\n" ? 1 : 0);
+    const report = markdown.slice(0, splitAt).trim();
+    const plan = markdown.slice(splitAt).trim();
+    if (plan.length > 0) return { report, plan };
   }
-  const splitAt = match.index + (match[1] === "\n" ? 1 : 0);
-  const report = markdown.slice(0, splitAt).trim();
-  const plan = markdown.slice(splitAt).trim();
-  return { report, plan: plan || null };
+  return { report: markdown.trim(), plan: null };
 }
 
 type StatusInfo = {
@@ -98,7 +108,7 @@ export default async function IdeaPage({
   return (
     <main className="app-backdrop flex min-h-screen flex-col items-center px-6 py-12 sm:py-16 print:bg-white print:py-0">
       {isProcessing ? (
-        <meta httpEquiv="refresh" content="5" />
+        <IdeaStatusPoll id={idea.id} initialStatus={idea.status} />
       ) : null}
       <RecordHistoryEntry
         id={idea.id}

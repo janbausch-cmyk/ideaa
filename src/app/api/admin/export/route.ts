@@ -1,5 +1,5 @@
 import { isAdminRequestAuthorized } from "@/lib/admin-auth";
-import { adminAllIdeasForExport, type IdeaRow } from "@/lib/db";
+import { adminIdeasForExportPaged, type IdeaRow } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -28,7 +28,6 @@ function csvCell(value: unknown): string {
   } else {
     s = String(value);
   }
-  // Strip CR to keep CSV well-formed; quote always to be safe.
   s = s.replace(/\r/g, "");
   return `"${s.replace(/"/g, '""')}"`;
 }
@@ -43,13 +42,28 @@ function toCsv(rows: IdeaRow[]): string {
   return [header, ...lines].join("\n") + "\n";
 }
 
+function parseSince(raw: string | null): Date | undefined {
+  if (!raw) return undefined;
+  const t = Date.parse(raw);
+  if (Number.isNaN(t)) return undefined;
+  return new Date(t);
+}
+
 export async function GET(request: Request) {
   if (!(await isAdminRequestAuthorized(request))) {
     return new Response("Unauthorized", { status: 401 });
   }
   const url = new URL(request.url);
   const format = (url.searchParams.get("format") ?? "json").toLowerCase();
-  const rows = await adminAllIdeasForExport();
+  const limit = url.searchParams.get("limit");
+  const offset = url.searchParams.get("offset");
+  const since = parseSince(url.searchParams.get("since"));
+
+  const { rows, total, has_more } = await adminIdeasForExportPaged({
+    limit: limit ? Number.parseInt(limit, 10) : undefined,
+    offset: offset ? Number.parseInt(offset, 10) : undefined,
+    since,
+  });
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 
   if (format === "csv") {
@@ -59,15 +73,32 @@ export async function GET(request: Request) {
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": `attachment; filename="ideaa-ideas-${stamp}.csv"`,
         "Cache-Control": "no-store",
+        "X-Total-Count": String(total),
+        "X-Has-More": String(has_more),
       },
     });
   }
 
-  return new Response(JSON.stringify({ exported_at: new Date().toISOString(), count: rows.length, ideas: rows }, null, 2), {
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      "Content-Disposition": `attachment; filename="ideaa-ideas-${stamp}.json"`,
-      "Cache-Control": "no-store",
+  return new Response(
+    JSON.stringify(
+      {
+        exported_at: new Date().toISOString(),
+        total,
+        count: rows.length,
+        has_more,
+        ideas: rows,
+      },
+      null,
+      2,
+    ),
+    {
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Content-Disposition": `attachment; filename="ideaa-ideas-${stamp}.json"`,
+        "Cache-Control": "no-store",
+        "X-Total-Count": String(total),
+        "X-Has-More": String(has_more),
+      },
     },
-  });
+  );
 }

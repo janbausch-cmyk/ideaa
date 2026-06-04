@@ -621,6 +621,51 @@ export async function adminAllIdeasForExport(): Promise<IdeaRow[]> {
   return rows;
 }
 
+export type AdminExportFilter = {
+  limit?: number;
+  offset?: number;
+  since?: Date;
+};
+
+export type AdminExportResult = {
+  rows: IdeaRow[];
+  total: number;
+  has_more: boolean;
+};
+
+const EXPORT_DEFAULT_LIMIT = 1000;
+const EXPORT_MAX_LIMIT = 5000;
+
+export async function adminIdeasForExportPaged(
+  filter: AdminExportFilter = {},
+): Promise<AdminExportResult> {
+  await ensureSchema();
+  const sql = getSql();
+  const limit = Math.min(
+    Math.max(filter.limit ?? EXPORT_DEFAULT_LIMIT, 1),
+    EXPORT_MAX_LIMIT,
+  );
+  const offset = Math.max(filter.offset ?? 0, 0);
+  const sinceIso = filter.since ? filter.since.toISOString() : null;
+
+  const rows = (await sql`
+    SELECT ${sql.unsafe(IDEA_COLUMNS)}
+    FROM ideas
+    WHERE (${sinceIso}::timestamptz IS NULL OR created_at > ${sinceIso}::timestamptz)
+    ORDER BY created_at DESC
+    LIMIT ${limit}
+    OFFSET ${offset}
+  `) as IdeaRow[];
+
+  const totals = (await sql`
+    SELECT count(*)::int AS n
+    FROM ideas
+    WHERE (${sinceIso}::timestamptz IS NULL OR created_at > ${sinceIso}::timestamptz)
+  `) as Array<{ n: number }>;
+  const total = totals[0]?.n ?? 0;
+  return { rows, total, has_more: offset + rows.length < total };
+}
+
 export async function adminUpdateIdea(
   id: string,
   patch: { status?: string; admin_note?: string | null; tags?: string[] },

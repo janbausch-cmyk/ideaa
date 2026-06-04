@@ -22,6 +22,18 @@ function getConcurrency(): number {
 // Vercel function lifetime (300s).
 export const STALE_RUNNING_RECOVERY_SECONDS = 320;
 
+// Per-process dedupe. activeTick is in-memory, so it does NOT cooperate
+// across Vercel function instances. Cross-instance dedupe could be added via
+// pg_try_advisory_lock or a "worker_throttle"-style table; we skip both
+// because:
+//   1. The actual work (claimNextQueuedIdea, requeueStaleRunning) is already
+//      safe under concurrency thanks to SKIP LOCKED + the WHERE-condition
+//      on requeueStaleRunning. Worst case is one extra UPDATE statement
+//      with count 0 — cheap.
+//   2. Neon serverless is HTTP-stateless, so session-level pg_advisory_lock
+//      would auto-release before the work runs.
+// If queue throughput ever becomes a problem, revisit with a transactional
+// xact_lock inside a single multi-statement call.
 let activeTick: Promise<void> | null = null;
 
 async function workerLoop(): Promise<void> {

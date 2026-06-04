@@ -129,6 +129,20 @@ export async function ensureSchema(): Promise<void> {
       `;
       await sql`CREATE INDEX IF NOT EXISTS idea_unlocks_idea_id_idx ON idea_unlocks (idea_id)`;
       await sql`CREATE INDEX IF NOT EXISTS idea_unlocks_created_at_idx ON idea_unlocks (created_at DESC)`;
+
+      // IDEAA-108: per-IP submit throttle. Store only sha256 of the IP — no
+      // reversible PII — and time of the submission. Counted over a rolling
+      // 24h window. Cleaned via a daily prune (see pruneStaleSubmitThrottle).
+      await sql`
+        CREATE TABLE IF NOT EXISTS submit_throttle (
+          ip_hash    text NOT NULL,
+          created_at timestamptz NOT NULL DEFAULT now()
+        )
+      `;
+      await sql`
+        CREATE INDEX IF NOT EXISTS submit_throttle_ip_hash_created_at_idx
+        ON submit_throttle (ip_hash, created_at DESC)
+      `;
     })().catch((err) => {
       schemaReady = null;
       throw err;
@@ -208,9 +222,62 @@ export async function insertIdeas(rawTexts: string[]): Promise<IdeaRow[]> {
   if (rawTexts.length === 0) return [];
   if (rawTexts.length === 1) return [await insertIdea(rawTexts[0])];
   await ensureSchema();
-  // Neon serverless tagged-template doesn't accept array unnest cleanly, so
-  // run inserts in parallel — each is a single autocommit statement.
-  return Promise.all(rawTexts.map((t) => insertIdea(t)));
+  // Single atomic statement: either all rows insert or none. Previously this
+  // ran N parallel INSERTs via Promise.all, which left half-batches in the
+  // DB if any one failed.
+  const sql = getSql();
+  const rows = (await sql`
+    INSERT INTO ideas (raw_text, status)
+    SELECT unnest(${rawTexts}::text[]) AS raw_text, 'queued'
+    RETURNING ${sql.unsafe(IDEA_COLUMNS)}
+  `) as IdeaRow[];
+  return rows;
+}
+
+// --- Submit throttle (per-IP rate limit) ---------------------------------
+
+export async function countRecentSubmissions(
+  ipHash: string,
+  withinSeconds: number,
+): Promise<number> {
+  await ensureSchema();
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT count(*)::int AS n
+    FROM submit_throttle
+    WHERE ip_hash = ${ipHash}
+      AND created_at > now() - (${withinSeconds} || ' seconds')::interval
+  `) as Array<{ n: number }>;
+  return rows[0]?.n ?? 0;
+}
+
+export async function recordSubmissions(
+  ipHash: string,
+  howMany: number,
+): Promise<void> {
+  if (howMany <= 0) return;
+  await ensureSchema();
+  const sql = getSql();
+  const rows = Array.from({ length: howMany }, () => ipHash);
+  await sql`
+    INSERT INTO submit_throttle (ip_hash)
+    SELECT unnest(${rows}::text[])
+  `;
+}
+
+// Drops throttle rows older than the window. Idempotent + cheap; intended
+// to be called from a cron or piggybacked on another routine.
+export async function pruneStaleSubmitThrottle(
+  olderThanSeconds = 7 * 24 * 60 * 60,
+): Promise<number> {
+  await ensureSchema();
+  const sql = getSql();
+  const rows = (await sql`
+    DELETE FROM submit_throttle
+    WHERE created_at < now() - (${olderThanSeconds} || ' seconds')::interval
+    RETURNING ip_hash
+  `) as Array<{ ip_hash: string }>;
+  return rows.length;
 }
 
 const UUID_RE =

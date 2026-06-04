@@ -13,13 +13,39 @@ export const dynamic = "force-dynamic";
 // claims completes and rows are stranded in 'running'.
 export const maxDuration = 300;
 
-const ERRORS: Record<string, string> = {
-  empty: "Bitte füge eine Idee ein, bevor du absendest.",
-  "too-long": "Eine der Ideen ist zu lang (max. 20.000 Zeichen pro Idee).",
-  "too-many": "Zu viele Ideen auf einmal (max. 20 pro Durchlauf).",
-  "insert-failed":
-    "Deine Idee konnte nicht gespeichert werden. Bitte versuche es erneut.",
+type ErrorContext = {
+  limit?: string;
+  remaining?: string;
+  attempted?: string;
 };
+
+function buildErrorMessage(
+  key: string,
+  ctx: ErrorContext,
+): string | null {
+  switch (key) {
+    case "empty":
+      return "Bitte füge eine Idee ein, bevor du absendest.";
+    case "too-long":
+      return "Eine der Ideen ist zu lang (max. 20.000 Zeichen pro Idee).";
+    case "too-many":
+      return "Zu viele Ideen auf einmal (max. 20 pro Durchlauf).";
+    case "insert-failed":
+      return "Deine Idee konnte nicht gespeichert werden. Bitte versuche es erneut.";
+    case "daily-limit": {
+      const limit = ctx.limit ?? "5";
+      return `Tageslimit erreicht. Du kannst pro Tag bis zu ${limit} Ideen einreichen. Probier es morgen wieder.`;
+    }
+    case "daily-limit-partial": {
+      const limit = ctx.limit ?? "5";
+      const remaining = ctx.remaining ?? "0";
+      const attempted = ctx.attempted ?? "?";
+      return `Tageslimit würde überschritten. Du kannst heute noch ${remaining} von ${limit} Ideen einreichen, du hast ${attempted} versucht. Bitte reduziere die Anzahl.`;
+    }
+    default:
+      return null;
+  }
+}
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -30,7 +56,15 @@ export default async function Home({
 }) {
   const params = await searchParams;
   const errorKey = typeof params.error === "string" ? params.error : null;
-  const errorMessage = errorKey ? (ERRORS[errorKey] ?? null) : null;
+  const errorMessage = errorKey
+    ? buildErrorMessage(errorKey, {
+        limit: typeof params.limit === "string" ? params.limit : undefined,
+        remaining:
+          typeof params.remaining === "string" ? params.remaining : undefined,
+        attempted:
+          typeof params.attempted === "string" ? params.attempted : undefined,
+      })
+    : null;
 
   return (
     <main className="app-backdrop flex min-h-screen flex-col items-center px-6 py-16 sm:py-24">

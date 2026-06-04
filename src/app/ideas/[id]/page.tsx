@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+import AnalysisProgress from "@/components/AnalysisProgress";
 import BrandWordmark from "@/components/BrandWordmark";
 import CopyLinkButton from "@/components/CopyLinkButton";
 import FavoriteButton from "@/components/FavoriteButton";
@@ -197,6 +198,10 @@ export default async function IdeaPage({
             {idea.raw_text}
           </pre>
         </section>
+
+        {isProcessing ? (
+          <AnalysisProgress submittedAtIso={submittedAtIso} />
+        ) : null}
 
         {status.tone === "ready" && idea.analysis_report
           ? (() => {

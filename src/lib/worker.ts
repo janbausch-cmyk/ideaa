@@ -17,6 +17,11 @@ function getConcurrency(): number {
   return 3;
 }
 
+// Must stay above P99 analysis duration (worst case: 20 web_search results +
+// 20 link-checks at 4s timeout each). 320s gives a small buffer over the
+// Vercel function lifetime (300s).
+export const STALE_RUNNING_RECOVERY_SECONDS = 320;
+
 let activeTick: Promise<void> | null = null;
 
 async function workerLoop(): Promise<void> {
@@ -54,12 +59,13 @@ export async function runWorkerTick(): Promise<void> {
   const concurrency = getConcurrency();
   activeTick = (async () => {
     try {
-      // Cheap recovery pass: anything stuck in 'running' for >150s is
-      // assumed dead and re-queued. (A typical analysis takes 60-90s; we
-      // pad to 150s to avoid clobbering healthy in-flight runs but still
-      // recover quickly from a serverless function kill.)
+      // Recovery pass: a row stuck in 'running' for longer than the Vercel
+      // function lifetime (300s) is definitely dead. Threshold must stay
+      // above P99 of healthy analysis duration (web_search + link-checks can
+      // legitimately push 200s+); too tight reclaims live runs and causes
+      // double Anthropic calls + write-races on the result.
       try {
-        await requeueStaleRunning(150);
+        await requeueStaleRunning(STALE_RUNNING_RECOVERY_SECONDS);
       } catch (err) {
         console.error("[worker] stale-recovery failed", err);
       }

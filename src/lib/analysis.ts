@@ -29,7 +29,11 @@ function getClient(): Anthropic {
         "ANTHROPIC_API_KEY is not set. Add it to .env.local for local dev or to Vercel project env in production.",
       );
     }
-    cachedClient = new Anthropic({ apiKey });
+    // maxRetries: 4 retries on 408/409/429/5xx + connection errors, with
+    // exponential backoff baked into the SDK. Default is 2; bump because a
+    // single analysis costs ~$0.30 and silent failures from transient 429s
+    // were stranding ideas in 'failed' for no good reason.
+    cachedClient = new Anthropic({ apiKey, maxRetries: 4 });
   }
   return cachedClient;
 }
@@ -161,7 +165,49 @@ function extractMarkdownLinkUrls(markdown: string): string[] {
   return [...urls];
 }
 
+// SSRF guard: the URLs we check come from the LLM, which can emit arbitrary
+// strings. Refuse anything that isn't a public https:// URL so a fabricated
+// link to a metadata service or internal host can't be probed from inside
+// the Vercel function.
+function isPublicHttpsUrl(raw: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== "https:") return false;
+  const host = parsed.hostname.toLowerCase();
+  if (!host) return false;
+  if (host === "localhost" || host.endsWith(".localhost")) return false;
+  // IPv4 literal in RFC1918 / loopback / link-local ranges, plus 0.0.0.0.
+  const ipv4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (ipv4) {
+    const a = Number(ipv4[1]);
+    const b = Number(ipv4[2]);
+    if (a === 10) return false;
+    if (a === 127) return false;
+    if (a === 0) return false;
+    if (a === 169 && b === 254) return false;
+    if (a === 172 && b >= 16 && b <= 31) return false;
+    if (a === 192 && b === 168) return false;
+  }
+  // IPv6 literals: bracketed in the host slot. Block loopback, link-local,
+  // unique-local, IPv4-mapped private ranges.
+  if (host.startsWith("[") && host.endsWith("]")) {
+    const v6 = host.slice(1, -1).toLowerCase();
+    if (v6 === "::1" || v6 === "::") return false;
+    if (v6.startsWith("fe80:") || v6.startsWith("fc") || v6.startsWith("fd")) return false;
+    if (v6.startsWith("::ffff:")) return false;
+  }
+  return true;
+}
+
 async function checkUrl(url: string): Promise<boolean> {
+  if (!isPublicHttpsUrl(url)) {
+    // Treat as broken so the link gets annotated; never send the request.
+    return false;
+  }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), LINK_CHECK_TIMEOUT_MS);
   const init: RequestInit = {

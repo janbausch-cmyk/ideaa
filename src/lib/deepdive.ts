@@ -25,7 +25,7 @@ function getClient(): Anthropic {
         "ANTHROPIC_API_KEY is not set. Add it to .env.local for local dev or to Vercel project env in production.",
       );
     }
-    cachedClient = new Anthropic({ apiKey });
+    cachedClient = new Anthropic({ apiKey, maxRetries: 4 });
   }
   return cachedClient;
 }

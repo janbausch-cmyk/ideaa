@@ -143,6 +143,20 @@ export async function ensureSchema(): Promise<void> {
         CREATE INDEX IF NOT EXISTS submit_throttle_ip_hash_created_at_idx
         ON submit_throttle (ip_hash, created_at DESC)
       `;
+
+      // IDEAA-110: bot visit log. Captured by middleware.ts when User-Agent
+      // matches a known crawler pattern. user_agent stored truncated.
+      await sql`
+        CREATE TABLE IF NOT EXISTS bot_visits (
+          id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          bot_name    text NOT NULL,
+          user_agent  text NOT NULL,
+          path        text NOT NULL,
+          created_at  timestamptz NOT NULL DEFAULT now()
+        )
+      `;
+      await sql`CREATE INDEX IF NOT EXISTS bot_visits_bot_name_created_at_idx ON bot_visits (bot_name, created_at DESC)`;
+      await sql`CREATE INDEX IF NOT EXISTS bot_visits_created_at_idx ON bot_visits (created_at DESC)`;
     })().catch((err) => {
       schemaReady = null;
       throw err;
@@ -278,6 +292,81 @@ export async function pruneStaleSubmitThrottle(
     RETURNING ip_hash
   `) as Array<{ ip_hash: string }>;
   return rows.length;
+}
+
+// --- Bot visit tracking --------------------------------------------------
+
+export type BotVisitSummaryRow = {
+  bot_name: string;
+  total: number;
+  visits_24h: number;
+  visits_7d: number;
+  visits_30d: number;
+  last_seen: string;
+};
+
+export async function adminBotVisitSummary(): Promise<BotVisitSummaryRow[]> {
+  await ensureSchema();
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT
+      bot_name,
+      count(*)::int AS total,
+      count(*) FILTER (WHERE created_at > now() - interval '24 hours')::int AS visits_24h,
+      count(*) FILTER (WHERE created_at > now() - interval '7 days')::int AS visits_7d,
+      count(*) FILTER (WHERE created_at > now() - interval '30 days')::int AS visits_30d,
+      max(created_at) AS last_seen
+    FROM bot_visits
+    GROUP BY bot_name
+    ORDER BY visits_7d DESC, total DESC
+  `) as BotVisitSummaryRow[];
+  return rows;
+}
+
+export type BotVisitRow = {
+  id: string;
+  bot_name: string;
+  user_agent: string;
+  path: string;
+  created_at: string;
+};
+
+export async function adminRecentBotVisits(
+  limit = 100,
+): Promise<BotVisitRow[]> {
+  await ensureSchema();
+  const sql = getSql();
+  const safeLimit = Math.min(Math.max(limit, 1), 500);
+  const rows = (await sql`
+    SELECT id::text AS id, bot_name, user_agent, path, created_at
+    FROM bot_visits
+    ORDER BY created_at DESC
+    LIMIT ${safeLimit}
+  `) as BotVisitRow[];
+  return rows;
+}
+
+export type BotPathRow = {
+  path: string;
+  visits: number;
+};
+
+export async function adminTopBotPaths(
+  withinDays = 7,
+  limit = 20,
+): Promise<BotPathRow[]> {
+  await ensureSchema();
+  const sql = getSql();
+  const safeLimit = Math.min(Math.max(limit, 1), 100);
+  const rows = (await sql`
+    SELECT path, count(*)::int AS visits
+    FROM bot_visits
+    WHERE created_at > now() - (${withinDays} || ' days')::interval
+    GROUP BY path
+    ORDER BY visits DESC
+    LIMIT ${safeLimit}
+  `) as BotPathRow[];
+  return rows;
 }
 
 const UUID_RE =

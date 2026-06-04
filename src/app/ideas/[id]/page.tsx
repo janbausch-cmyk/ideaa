@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+import BrandWordmark from "@/components/BrandWordmark";
 import CopyLinkButton from "@/components/CopyLinkButton";
 import FavoriteButton from "@/components/FavoriteButton";
 import PrintButton from "@/components/PrintButton";
@@ -104,6 +105,16 @@ export default async function IdeaPage({
         submittedAt={submittedAtIso}
       />
       <div className="flex w-full max-w-2xl flex-col gap-6">
+        <Link
+          href="/geschaeftsidee-validieren"
+          aria-label="IDEAA, zur Startseite"
+          className="no-print"
+        >
+          <BrandWordmark
+            className="brand-peak h-8 w-auto transition hover:opacity-80 sm:h-10"
+            title="IDEAA"
+          />
+        </Link>
         <header className="flex flex-col gap-2">
           <Link
             href="/"

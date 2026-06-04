@@ -305,3 +305,17 @@ body {
     background: #f3f3f3 !important;
   }
 }
+
+@keyframes ideaa-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in {
+  animation: ideaa-fade-in 280ms ease-out;
+}

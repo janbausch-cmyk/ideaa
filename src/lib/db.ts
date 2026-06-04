@@ -23,20 +23,40 @@ export function getSql(): NeonQueryFunction<false, false> {
   return cachedSql;
 }
 
-export async function ensureSchema(): Promise<void> {
-  if (!schemaReady) {
-    const sql = getSql();
-    schemaReady = (async () => {
-      await sql`
-        CREATE TABLE IF NOT EXISTS ideas (
-          id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-          raw_text    text NOT NULL,
-          status      text NOT NULL DEFAULT 'queued',
-          created_at  timestamptz NOT NULL DEFAULT now(),
-          updated_at  timestamptz NOT NULL DEFAULT now()
-        )
-      `;
-      await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS analysis_report text`;
+// Bump this whenever you add migration statements to applyAllMigrations().
+// The fast path in ensureSchema() trusts schema_version to decide whether to
+// run the slow path. If a later migration is needed, increment this number
+// AND add the new statements to applyAllMigrations().
+const SCHEMA_VERSION = 1;
+
+async function checkSchemaVersionFast(
+  sql: NeonQueryFunction<false, false>,
+): Promise<boolean> {
+  try {
+    const rows = (await sql`
+      SELECT max(version)::int AS v FROM schema_version
+    `) as Array<{ v: number | null }>;
+    const current = rows[0]?.v ?? 0;
+    return current >= SCHEMA_VERSION;
+  } catch {
+    // schema_version table doesn't exist yet → first run, slow path required.
+    return false;
+  }
+}
+
+async function applyAllMigrations(
+  sql: NeonQueryFunction<false, false>,
+): Promise<void> {
+  await sql`
+    CREATE TABLE IF NOT EXISTS ideas (
+      id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      raw_text    text NOT NULL,
+      status      text NOT NULL DEFAULT 'queued',
+      created_at  timestamptz NOT NULL DEFAULT now(),
+      updated_at  timestamptz NOT NULL DEFAULT now()
+    )
+  `;
+  await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS analysis_report text`;
       await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS analysis_error text`;
       await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS analysis_started_at timestamptz`;
       await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS analysis_finished_at timestamptz`;
@@ -155,8 +175,38 @@ export async function ensureSchema(): Promise<void> {
           created_at  timestamptz NOT NULL DEFAULT now()
         )
       `;
-      await sql`CREATE INDEX IF NOT EXISTS bot_visits_bot_name_created_at_idx ON bot_visits (bot_name, created_at DESC)`;
-      await sql`CREATE INDEX IF NOT EXISTS bot_visits_created_at_idx ON bot_visits (created_at DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS bot_visits_bot_name_created_at_idx ON bot_visits (bot_name, created_at DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS bot_visits_created_at_idx ON bot_visits (created_at DESC)`;
+
+  // Record that the full migration set has run. Used by checkSchemaVersionFast
+  // to skip the slow path on subsequent cold starts.
+  await sql`
+    CREATE TABLE IF NOT EXISTS schema_version (
+      version    int NOT NULL,
+      applied_at timestamptz NOT NULL DEFAULT now()
+    )
+  `;
+  await sql`
+    INSERT INTO schema_version (version)
+    SELECT ${SCHEMA_VERSION}
+    WHERE NOT EXISTS (
+      SELECT 1 FROM schema_version WHERE version >= ${SCHEMA_VERSION}
+    )
+  `;
+}
+
+export async function ensureSchema(): Promise<void> {
+  if (!schemaReady) {
+    schemaReady = (async () => {
+      const sql = getSql();
+      // Fast path: one cheap SELECT instead of 25+ ALTER statements on every
+      // cold start. After the first deploy that runs the slow path, this is
+      // all subsequent cold starts hit.
+      if (await checkSchemaVersionFast(sql)) return;
+      // Slow path: full schema setup. Idempotent thanks to IF NOT EXISTS,
+      // safe to run repeatedly. Used on first deploy or when SCHEMA_VERSION
+      // bumps.
+      await applyAllMigrations(sql);
     })().catch((err) => {
       schemaReady = null;
       throw err;

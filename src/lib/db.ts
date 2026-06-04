@@ -905,6 +905,42 @@ export async function markStripeEventNotified(
   }
 }
 
+// Find Stripe events that arrived but never got a Telegram ping. Used by the
+// daily retry cron. Filters:
+//   - notified_at IS NULL: hasn't been delivered
+//   - created_at < now() - 1h: give Stripe's own retry storm time to settle
+//   - created_at > now() - 7d: don't keep retrying ancient noise
+export type StripeEventRetryRow = {
+  id: string;
+  type: string;
+  amount_minor: number | null;
+  currency: string | null;
+  customer_email: string | null;
+  idea_id: string | null;
+  payload: unknown;
+  notification_error: string | null;
+  created_at: string;
+};
+
+export async function listUnnotifiedStripeEvents(
+  limit = 50,
+): Promise<StripeEventRetryRow[]> {
+  await ensureSchema();
+  const sql = getSql();
+  const safeLimit = Math.min(Math.max(limit, 1), 200);
+  const rows = (await sql`
+    SELECT id, type, amount_minor, currency, customer_email, idea_id,
+           payload, notification_error, created_at
+    FROM stripe_events
+    WHERE notified_at IS NULL
+      AND created_at < now() - interval '1 hour'
+      AND created_at > now() - interval '7 days'
+    ORDER BY created_at ASC
+    LIMIT ${safeLimit}
+  `) as StripeEventRetryRow[];
+  return rows;
+}
+
 export async function adminDeleteIdea(id: string): Promise<boolean> {
   if (!isValidIdeaId(id)) return false;
   await ensureSchema();

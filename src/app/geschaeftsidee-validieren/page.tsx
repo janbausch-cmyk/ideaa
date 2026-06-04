@@ -6,9 +6,9 @@ import LegalFooter from "@/components/LegalFooter";
 import LandingCta from "./LandingCta";
 
 const PAGE_PATH = "/geschaeftsidee-validieren";
-const TITLE = "Geschäftsidee validieren — in Minuten statt Wochen | IDEAA";
+const TITLE = "Geschäftsidee validieren: Marktcheck und Plan in 2 Minuten | IDEAA";
 const DESCRIPTION =
-  "Geschäftsidee validieren mit KI: Marktanalyse, Wettbewerber-Check und Umsetzungsplan in einem strukturierten Bericht. Idee einfügen, Validierung erhalten — kostenlos, ohne Anmeldung.";
+  "Geschäftsidee mit KI validieren: Marktanalyse, Konkurrenzcheck und erster Umsetzungsplan in einem strukturierten Bericht. Kostenlos, ohne Anmeldung.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -31,8 +31,24 @@ export const metadata: Metadata = {
 
 const FAQ: Array<{ q: string; a: string }> = [
   {
+    q: "Wie validiere ich eine Geschäftsidee?",
+    a: "Du prüfst systematisch vier Dinge: Gibt es einen echten Markt und eine zahlende Zielgruppe? Wer ist die Konkurrenz, und wo ist die Lücke? Welche Annahmen müssen stimmen? Und was würde die Idee scheitern lassen? Genau diese Schritte nimmt IDEAA dir ab und fasst sie in 60 bis 90 Sekunden in einem Bericht zusammen.",
+  },
+  {
+    q: "Geschäftsidee prüfen, testen oder validieren: Wo ist der Unterschied?",
+    a: "In der Praxis meint das dasselbe: herausfinden, ob deine Idee einen echten Markt, zahlende Kunden und eine realistische Umsetzung hat, bevor du Zeit und Geld investierst. IDEAA übernimmt diesen Schritt und liefert das Ergebnis als Bericht mit Markteinschätzung, Wettbewerb, Risiken und erstem Umsetzungsplan.",
+  },
+  {
+    q: "Woran erkenne ich, ob meine Geschäftsidee Potenzial hat?",
+    a: "Gute Indikatoren sind ein klar benennbares Problem, eine Zielgruppe mit erkennbarer Zahlungsbereitschaft und ein Markt, der groß genug, aber nicht hoffnungslos überfüllt ist. IDEAA bewertet diese Faktoren und macht die größten Risiken sichtbar, bevor du Zeit oder Geld investierst.",
+  },
+  {
+    q: "Reicht eine KI-Validierung, oder muss ich mit echten Kunden sprechen?",
+    a: "Beides gehört zusammen. IDEAA gibt dir in Minuten eine fundierte erste Einschätzung zu Markt, Wettbewerb und Risiken, damit du nicht bei null anfängst. Den finalen Beweis liefern aber immer echte Kundengespräche und ein Vorverkauf. Der Bericht sagt dir, was du als Erstes mit Kunden testen solltest.",
+  },
+  {
     q: "Was kostet die Validierung?",
-    a: "Aktuell nichts. IDEAA ist in der frühen Produktphase — du erhältst den vollständigen Validierungsbericht ohne Anmeldung oder Bezahlung.",
+    a: "Aktuell nichts. IDEAA ist in der frühen Produktphase, deshalb erhältst du den vollständigen Bericht ohne Anmeldung oder Bezahlung.",
   },
   {
     q: "Wie lange dauert eine Validierung?",
@@ -40,7 +56,7 @@ const FAQ: Array<{ q: string; a: string }> = [
   },
   {
     q: "Was bekomme ich am Ende?",
-    a: "Einen strukturierten Bericht mit Markteinschätzung, Wettbewerbsumfeld, Zielgruppen-Hypothesen, Risiken und einem konkreten ersten Umsetzungsplan.",
+    a: "Einen Bericht mit Markteinschätzung, Wettbewerbsumfeld, Zielgruppen-Hypothesen, Risiken und einem ersten Umsetzungsplan.",
   },
   {
     q: "Werden meine Ideen geteilt?",
@@ -48,7 +64,7 @@ const FAQ: Array<{ q: string; a: string }> = [
   },
 ];
 
-export default function GeschaeftsideeValidierenPage() {
+export default function LandingPage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
@@ -91,7 +107,6 @@ export default function GeschaeftsideeValidierenPage() {
       />
 
       <div className="flex w-full max-w-3xl flex-col gap-16">
-        {/* Above-the-fold: Hero + Wertversprechen + Erklärung + CTA am Fold-Ende */}
         <section className="flex flex-col gap-10">
           <header className="flex flex-col items-center gap-5 text-center">
             <BrandWordmark
@@ -100,13 +115,12 @@ export default function GeschaeftsideeValidierenPage() {
             />
             <span className="eyebrow">Für Gründer und Produktteams</span>
             <h1 className="text-3xl font-bold tracking-tight text-[color:var(--foreground)] sm:text-5xl">
-              Geschäftsidee validieren — in Minuten statt Wochen
+              Geschäftsidee validieren, bevor du Monate baust
             </h1>
             <p className="max-w-2xl text-base text-[color:var(--foreground-muted)] sm:text-lg">
-              Füge deine Idee ein und erhalte einen strukturierten Bericht:
-              Marktgröße, Wettbewerber, Zielgruppen-Hypothesen, Risiken — und
-              einen konkreten ersten Umsetzungsplan. Ohne Anmeldung, in unter
-              zwei Minuten.
+              Füg deine Idee ein. Du bekommst einen strukturierten Bericht:
+              Marktgröße, Wettbewerber, Zielgruppe, Risiken und einen ersten
+              Umsetzungsplan. Kostenlos, ohne Anmeldung, in unter zwei Minuten.
             </p>
           </header>
 
@@ -115,17 +129,17 @@ export default function GeschaeftsideeValidierenPage() {
               {
                 title: "1. Idee einfügen",
                 body:
-                  "Ein Satz reicht, ein Absatz ist besser. Markdown, Skizze, Brainstorming — alles ist okay.",
+                  "Ein Satz reicht, ein Absatz ist besser. Markdown, Skizze oder lose Notizen sind alle okay.",
               },
               {
                 title: "2. KI analysiert",
                 body:
-                  "Wir prüfen Markt, Wettbewerb, Zielgruppe und typische Stolperfallen — und führen Quellen-Recherche durch.",
+                  "Wir prüfen Markt, Wettbewerb, Zielgruppe und typische Stolperfallen und recherchieren dazu Quellen.",
               },
               {
                 title: "3. Bericht erhalten",
                 body:
-                  "Du bekommst eine Einschätzung, eine Risikoliste und einen konkreten ersten Umsetzungsplan.",
+                  "Du bekommst eine Einschätzung, eine Risikoliste und einen ersten Umsetzungsplan.",
               },
             ].map((step) => (
               <div key={step.title} className="surface-card p-5">
@@ -139,14 +153,13 @@ export default function GeschaeftsideeValidierenPage() {
             ))}
           </div>
 
-          {/* CTA am Ende des Folds (nicht oben) */}
           <div className="surface-card flex flex-col items-center gap-4 p-6 text-center sm:p-8">
             <h2 className="text-xl font-semibold text-[color:var(--foreground)] sm:text-2xl">
               Deine Idee jetzt validieren
             </h2>
             <p className="max-w-md text-sm text-[color:var(--foreground-muted)]">
-              Kostenlos, ohne Anmeldung. Du bekommst eine eigene URL für deinen
-              Bericht und kannst jederzeit zurückkehren.
+              Kostenlos und ohne Anmeldung. Jeder Bericht bekommt eine eigene
+              URL, zu der du jederzeit zurückkehren kannst.
             </p>
             <LandingCta className="brand-button inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold sm:text-base">
               Idee einfügen und validieren
@@ -166,12 +179,11 @@ export default function GeschaeftsideeValidierenPage() {
               </svg>
             </LandingCta>
             <p className="text-xs text-[color:var(--foreground-muted)]">
-              Kein Account. Keine Kreditkarte. Dauert ca. 60–90 Sekunden.
+              Kein Account, keine Kreditkarte. Dauert 60 bis 90 Sekunden.
             </p>
           </div>
         </section>
 
-        {/* Problem / Lösung */}
         <section className="flex flex-col gap-6">
           <h2 className="text-2xl font-bold tracking-tight text-[color:var(--foreground)] sm:text-3xl">
             Warum die meisten Geschäftsideen zu spät validiert werden
@@ -183,16 +195,16 @@ export default function GeschaeftsideeValidierenPage() {
               </h3>
               <ul className="mt-3 space-y-2 text-sm text-[color:var(--foreground-muted)]">
                 <li>
-                  Recherche kostet Tage: Markt, Wettbewerber, Zielgruppe, Preis,
-                  Risiken — jeder Aspekt einzeln.
+                  Recherche kostet Tage: Markt, Wettbewerber, Zielgruppe, Preis
+                  und Risiken, jeder Punkt einzeln.
                 </li>
                 <li>
-                  Bauchgefühl ersetzt Fakten, weil die strukturierte Analyse zu
-                  viel Aufwand wäre.
+                  Am Ende entscheidet das Bauchgefühl, weil die strukturierte
+                  Analyse zu viel Aufwand kostet.
                 </li>
                 <li>
-                  Viele Ideen werden erst nach Monaten Aufbau verworfen — Zeit
-                  und Geld sind dann schon weg.
+                  Viele Ideen werden erst nach Monaten Aufbau verworfen, da ist
+                  die Zeit dann schon investiert.
                 </li>
               </ul>
             </div>
@@ -202,23 +214,22 @@ export default function GeschaeftsideeValidierenPage() {
               </h3>
               <ul className="mt-3 space-y-2 text-sm text-[color:var(--foreground-muted)]">
                 <li>
-                  Strukturierter Bericht statt loser ChatGPT-Antworten: gleicher
-                  Rahmen für jede Idee.
+                  Strukturierter Bericht statt loser ChatGPT-Antworten:
+                  gleicher Rahmen für jede Idee.
                 </li>
                 <li>
-                  Quellen-Recherche zu Markt und Wettbewerb fließt direkt in die
-                  Einschätzung ein.
+                  Quellen-Recherche zu Markt und Wettbewerb fließt direkt in
+                  die Einschätzung ein.
                 </li>
                 <li>
-                  Am Ende steht ein konkreter erster Umsetzungsplan — kein Buzzword,
-                  sondern nächste Schritte.
+                  Am Ende stehen konkrete nächste Schritte, kein
+                  Buzzword-Plan.
                 </li>
               </ul>
             </div>
           </div>
         </section>
 
-        {/* Was im Bericht steht */}
         <section className="flex flex-col gap-6">
           <h2 className="text-2xl font-bold tracking-tight text-[color:var(--foreground)] sm:text-3xl">
             Was im Validierungsbericht steht
@@ -228,12 +239,12 @@ export default function GeschaeftsideeValidierenPage() {
               {
                 title: "Markteinschätzung",
                 body:
-                  "Wie groß ist der adressierbare Markt? Wer kauft das, wer nicht — und warum?",
+                  "Wie groß ist der adressierbare Markt? Wer kauft das, wer nicht, und warum?",
               },
               {
                 title: "Wettbewerbsumfeld",
                 body:
-                  "Wer ist heute schon im Markt? Wo ist eine offene Lücke, wo wäre ein Frontalangriff sinnlos?",
+                  "Wer ist schon im Markt? Wo ist die Lücke, und wo wäre ein direkter Angriff aussichtslos?",
               },
               {
                 title: "Zielgruppen-Hypothesen",
@@ -251,9 +262,9 @@ export default function GeschaeftsideeValidierenPage() {
                   "Konkrete nächste Schritte: Was zuerst testen, wie schnell, mit welchem Mindesteinsatz?",
               },
               {
-                title: "Geteilte URL",
+                title: "Eigene URL",
                 body:
-                  "Jeder Bericht bekommt eine eigene URL — teile sie mit Mitgründer:innen oder behalte sie für dich.",
+                  "Jeder Bericht bekommt eine eigene URL, die du mit Mitgründer:innen teilen oder für dich behalten kannst.",
               },
             ].map((item) => (
               <div key={item.title} className="surface-card p-5">
@@ -268,7 +279,6 @@ export default function GeschaeftsideeValidierenPage() {
           </div>
         </section>
 
-        {/* FAQ */}
         <section className="flex flex-col gap-6">
           <h2 className="text-2xl font-bold tracking-tight text-[color:var(--foreground)] sm:text-3xl">
             Häufige Fragen
@@ -296,14 +306,13 @@ export default function GeschaeftsideeValidierenPage() {
           </div>
         </section>
 
-        {/* Sekundäre CTA */}
         <section className="surface-card flex flex-col items-center gap-4 p-6 text-center sm:p-8">
           <h2 className="text-xl font-semibold text-[color:var(--foreground)] sm:text-2xl">
-            Bereit, deine Idee strukturiert zu prüfen?
+            Bereit, deine Geschäftsidee zu prüfen?
           </h2>
           <p className="max-w-md text-sm text-[color:var(--foreground-muted)]">
-            Kein Setup, kein Account. Idee einfügen, Bericht erhalten,
-            Entscheidung treffen.
+            Kein Setup, kein Account nötig. Idee einfügen, und du bekommst
+            deinen Bericht.
           </p>
           <LandingCta className="brand-button inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold sm:text-base">
             Jetzt Geschäftsidee validieren
@@ -325,7 +334,7 @@ export default function GeschaeftsideeValidierenPage() {
         </section>
 
         <footer className="flex flex-col items-center gap-3 pb-6 text-center text-xs text-[color:var(--foreground-muted)]">
-          <p>IDEAA — Idee einfügen, validierten Geschäftsfall erhalten.</p>
+          <p>IDEAA: Idee einfügen, Validierungsbericht bekommen.</p>
           <LegalFooter />
         </footer>
       </div>

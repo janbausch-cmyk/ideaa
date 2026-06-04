@@ -40,7 +40,7 @@ export default function CopyLinkButton() {
       type="button"
       onClick={copy}
       className="no-print inline-flex items-center gap-1.5 rounded-full border border-[color:var(--border)] bg-[color:var(--surface)] px-3 py-1.5 text-xs font-medium text-[color:var(--foreground)] shadow-sm transition hover:border-[color:var(--brand-ink)]/40 hover:text-[color:var(--brand-ink)]"
-      aria-label="Copy link to this idea"
+      aria-label="Link zu dieser Idee kopieren"
     >
       <svg
         aria-hidden
@@ -58,10 +58,10 @@ export default function CopyLinkButton() {
       </svg>
       <span>
         {state === "copied"
-          ? "Copied"
+          ? "Kopiert"
           : state === "error"
-            ? "Copy failed"
-            : "Copy link"}
+            ? "Kopieren fehlgeschlagen"
+            : "Link kopieren"}
       </span>
     </button>
   );

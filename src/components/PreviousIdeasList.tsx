@@ -32,13 +32,13 @@ export default function PreviousIdeasList() {
     <div className="flex flex-col gap-4">
       {favoriteEntries.length > 0 ? (
         <Section
-          title="Your favorites"
+          title="Deine Favoriten"
           entries={favoriteEntries}
           starred
         />
       ) : null}
       {previousEntries.length > 0 ? (
-        <Section title="Your previous ideas" entries={previousEntries} />
+        <Section title="Deine früheren Ideen" entries={previousEntries} />
       ) : null}
     </div>
   );
@@ -58,7 +58,7 @@ function Section({
       <div className="flex items-center justify-between">
         <h2 className="eyebrow">{title}</h2>
         <span className="text-[11px] text-[color:var(--foreground-muted)]">
-          {entries.length} {entries.length === 1 ? "idea" : "ideas"}
+          {entries.length} {entries.length === 1 ? "Idee" : "Ideen"}
         </span>
       </div>
       <ul className="flex flex-col divide-y divide-[color:var(--border)]">
@@ -90,7 +90,7 @@ function Section({
                 />
               )}
               <span className="flex-1 truncate">
-                {entry.ideaPreview || "(no preview)"}
+                {entry.ideaPreview || "(keine Vorschau)"}
               </span>
               <span className="shrink-0 text-xs text-[color:var(--foreground-muted)]">
                 {formatRelativeTime(entry.submittedAt)}

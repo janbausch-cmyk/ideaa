@@ -14,10 +14,11 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 const ERRORS: Record<string, string> = {
-  empty: "Please paste an idea before submitting.",
-  "too-long": "One of the ideas is too long (max 20,000 characters each).",
-  "too-many": "Too many ideas in one batch (max 20).",
-  "insert-failed": "Could not save your idea. Please try again.",
+  empty: "Bitte füge eine Idee ein, bevor du absendest.",
+  "too-long": "Eine der Ideen ist zu lang (max. 20.000 Zeichen pro Idee).",
+  "too-many": "Zu viele Ideen auf einmal (max. 20 pro Durchlauf).",
+  "insert-failed":
+    "Deine Idee konnte nicht gespeichert werden. Bitte versuche es erneut.",
 };
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -35,15 +36,15 @@ export default async function Home({
     <main className="app-backdrop flex min-h-screen flex-col items-center px-6 py-16 sm:py-24">
       <div className="flex w-full max-w-2xl flex-col gap-8">
         <header className="flex flex-col items-center gap-4 text-center">
-          <span className="eyebrow">Idea → validated business case</span>
+          <span className="eyebrow">Geschäftsidee einreichen</span>
           <h1 className="sr-only">IDEAA</h1>
           <BrandWordmark
             className="brand-peak h-14 w-auto sm:h-16"
             title="IDEAA"
           />
           <p className="max-w-md text-base text-[color:var(--foreground-muted)] sm:text-lg">
-            Paste a raw idea. Get a structured validation report and a plan you
-            can act on.
+            Schreib deine Idee unten rein. Du bekommst eine Einschätzung zu
+            Markt, Konkurrenz und Risiken sowie einen ersten Umsetzungsplan.
           </p>
         </header>
 
@@ -56,10 +57,10 @@ export default async function Home({
               htmlFor="idea"
               className="text-sm font-semibold text-[color:var(--foreground)]"
             >
-              Your idea
+              Deine Idee
             </label>
             <span className="text-[10px] uppercase tracking-wider text-[color:var(--foreground-muted)]">
-              up to 20 at once
+              bis zu 20 auf einmal
             </span>
           </div>
           <textarea
@@ -67,15 +68,16 @@ export default async function Home({
             name="idea"
             required
             rows={10}
-            placeholder={"A subscription box for…\n\n---\n\nA marketplace where…"}
+            placeholder={"Eine Abo-Box für…\n\n---\n\nEin Marktplatz, auf dem…"}
             className="w-full resize-y rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3 text-sm leading-relaxed text-[color:var(--foreground)] placeholder:text-[color:var(--foreground-muted)]/70 shadow-inner focus:border-[color:var(--brand-ink)]/60 focus:outline-none focus:ring-2 focus:ring-[color:var(--brand-ink)]/20"
           />
           <p className="text-xs text-[color:var(--foreground-muted)]">
-            Tip: paste several ideas at once, separated by a line of{" "}
+            Mehrere Ideen auf einmal? Trenn sie mit einer Zeile aus{" "}
             <code className="rounded bg-[color:var(--surface-muted)] px-1.5 py-0.5 font-mono text-[11px]">
               ---
-            </code>{" "}
-            (max 20 per batch, 20,000 chars each). They run in parallel.
+            </code>
+            . Bis zu 20 Stück, je 20.000 Zeichen. Sie werden parallel
+            analysiert.
           </p>
           {errorMessage ? (
             <p className="rounded-lg border border-rose-300/60 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/50 dark:text-rose-300">
@@ -87,7 +89,7 @@ export default async function Home({
               type="submit"
               className="brand-button inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold"
             >
-              Submit idea
+              Idee absenden
               <svg
                 aria-hidden
                 viewBox="0 0 24 24"
@@ -107,7 +109,7 @@ export default async function Home({
               href="/ideas"
               className="text-sm font-medium text-[color:var(--brand-ink)] hover:underline"
             >
-              See all your ideas →
+              Frühere Ideen anschauen
             </Link>
           </div>
         </form>
@@ -115,18 +117,8 @@ export default async function Home({
         <PreviousIdeasList />
 
         <p className="text-center text-xs text-[color:var(--foreground-muted)]">
-          No accounts needed. Each idea is saved at its own shareable URL you
-          can return to.
-        </p>
-
-        <p className="text-center text-xs text-[color:var(--foreground-muted)]">
-          <Link
-            href="/geschaeftsidee-validieren"
-            className="hover:underline"
-            hrefLang="de"
-          >
-            Deutsch: Geschäftsidee validieren →
-          </Link>
+          Kein Account nötig. Jede Idee bekommt eine eigene URL, die du
+          speichern oder weitergeben kannst.
         </p>
 
         <LegalFooter />

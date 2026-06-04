@@ -19,26 +19,27 @@ const siteUrl =
 
 const googleSiteVerification = process.env.GOOGLE_SITE_VERIFICATION;
 
+const SITE_TITLE = "IDEAA: Idee einfügen, Validierungsbericht bekommen";
+const SITE_DESC =
+  "Mach aus rohen Ideen validierte Geschäftschancen, mit KI-gestützter Analyse und Umsetzungsplan.";
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   verification: googleSiteVerification
     ? { google: googleSiteVerification }
     : undefined,
-  title: "IDEAA — paste an idea, get a validation report",
-  description:
-    "Turn raw ideas into validated, actionable business opportunities with AI-assisted analysis and implementation planning.",
+  title: SITE_TITLE,
+  description: SITE_DESC,
   openGraph: {
-    title: "IDEAA — paste an idea, get a validation report",
-    description:
-      "Turn raw ideas into validated, actionable business opportunities with AI-assisted analysis and implementation planning.",
+    title: SITE_TITLE,
+    description: SITE_DESC,
     siteName: "IDEAA",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "IDEAA — paste an idea, get a validation report",
-    description:
-      "Turn raw ideas into validated, actionable business opportunities with AI-assisted analysis and implementation planning.",
+    title: SITE_TITLE,
+    description: SITE_DESC,
   },
 };
 
@@ -49,7 +50,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="de"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">{children}</body>

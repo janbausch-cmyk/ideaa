@@ -38,10 +38,12 @@ export default async function Home({
         <header className="flex flex-col items-center gap-4 text-center">
           <span className="eyebrow">Geschäftsidee einreichen</span>
           <h1 className="sr-only">IDEAA</h1>
-          <BrandWordmark
-            className="brand-peak h-14 w-auto sm:h-16"
-            title="IDEAA"
-          />
+          <Link href="/geschaeftsidee-validieren" aria-label="IDEAA, zur Startseite">
+            <BrandWordmark
+              className="brand-peak h-14 w-auto transition hover:opacity-80 sm:h-16"
+              title="IDEAA"
+            />
+          </Link>
           <p className="max-w-md text-base text-[color:var(--foreground-muted)] sm:text-lg">
             Schreib deine Idee unten rein. Du bekommst eine Einschätzung zu
             Markt, Konkurrenz und Risiken sowie einen ersten Umsetzungsplan.

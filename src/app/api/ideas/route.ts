@@ -1,19 +1,13 @@
 import { after } from "next/server";
 
 import { getIdeaStatuses, requeueStaleRunning } from "@/lib/db";
-import { runWorkerTick } from "@/lib/worker";
+import { runWorkerTick, STALE_RUNNING_RECOVERY_SECONDS } from "@/lib/worker";
 
 export const dynamic = "force-dynamic";
 // Worker analyses take ~60–90s each. With 3 concurrent loops, draining a 5-idea
 // batch needs ~180s; bump the route lifetime so the polling-driven recovery tick
 // doesn't get killed mid-analysis (which would strand the row in 'running').
 export const maxDuration = 300;
-
-// If a row has been sitting in 'running' for longer than this, the worker
-// process that claimed it is presumed dead — re-queue so a fresh tick picks
-// it up. Short enough to recover from a serverless function kill quickly,
-// long enough to not interrupt a healthy in-flight analysis.
-const STALE_RUNNING_RECOVERY_SECONDS = 150;
 
 const MAX_IDS_PER_QUERY = 50;
 

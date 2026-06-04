@@ -7,33 +7,10 @@ export const maxDuration = 60;
 
 const STUCK_AGE_MS = 5 * 60 * 1000;
 
-function isAuthorized(request: Request): {
-  ok: true;
-  mode: "token" | "bootstrap";
-} | { ok: false; reason: string } {
-  const expected = process.env.ADMIN_TOKEN;
-  const header = request.headers.get("authorization");
-  const presented = header?.toLowerCase().startsWith("bearer ")
-    ? header.slice(7).trim()
-    : null;
-
-  if (expected) {
-    if (presented && presented === expected) {
-      return { ok: true, mode: "token" };
-    }
-    return { ok: false, reason: "Invalid or missing admin token." };
-  }
-
-  return { ok: true, mode: "bootstrap" };
-}
-
 export async function GET(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
-  // Gate the trace JSON behind the admin token/cookie. Previously this was
-  // unauthenticated; now that we have a proper admin auth surface, lock it
-  // down so prod doesn't leak full analysis traces to anyone with a UUID.
   if (!(await isAdminRequestAuthorized(request))) {
     return Response.json(
       { ok: false, error: "Unauthorized." },
@@ -67,14 +44,19 @@ export async function POST(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
+  // Admin auth is required. The previous "bootstrap" fallback (no token =
+  // open for stuck rows) was a footgun: a misconfigured deploy without
+  // ADMIN_TOKEN would silently expose this endpoint to the internet.
+  if (!(await isAdminRequestAuthorized(request))) {
+    return Response.json(
+      { ok: false, error: "Unauthorized." },
+      { status: 401 },
+    );
+  }
+
   const { id } = await context.params;
   if (!isValidIdeaId(id)) {
     return Response.json({ ok: false, error: "Invalid idea id." }, { status: 400 });
-  }
-
-  const auth = isAuthorized(request);
-  if (!auth.ok) {
-    return Response.json({ ok: false, error: auth.reason }, { status: 401 });
   }
 
   const before = await getIdea(id);
@@ -82,49 +64,11 @@ export async function POST(
     return Response.json({ ok: false, error: "Idea not found." }, { status: 404 });
   }
 
-  if (auth.mode === "bootstrap") {
-    // Bootstrap mode is for unsticking abandoned rows: queued (no worker
-    // ever picked it up) or running for too long.
-    const isStuckQueued = before.status === "queued" && !before.analysis_started_at;
-    const isStuckRunning =
-      before.status === "running" &&
-      !!before.analysis_started_at &&
-      Date.now() - new Date(before.analysis_started_at).getTime() >= STUCK_AGE_MS;
-    if (!isStuckQueued && !isStuckRunning) {
-      return Response.json(
-        {
-          ok: false,
-          error:
-            "ADMIN_TOKEN not set; bootstrap mode only triggers stuck rows (status=queued, or status=running for >5min).",
-          idea: {
-            id: before.id,
-            status: before.status,
-            analysis_started_at: before.analysis_started_at,
-          },
-        },
-        { status: 403 },
-      );
-    }
-    if (isStuckQueued) {
-      const ageMs = Date.now() - new Date(before.created_at).getTime();
-      if (ageMs < STUCK_AGE_MS) {
-        return Response.json(
-          {
-            ok: false,
-            error: `Bootstrap mode requires created_at older than ${STUCK_AGE_MS / 1000}s. Idea is ${Math.round(ageMs / 1000)}s old.`,
-          },
-          { status: 403 },
-        );
-      }
-    }
-  }
-
   const result = await processIdeaById(id, STUCK_AGE_MS / 1000);
 
   const after = await getIdea(id);
   return Response.json({
     ok: true,
-    auth_mode: auth.mode,
     claimed: result.claimed,
     idea: after && {
       id: after.id,

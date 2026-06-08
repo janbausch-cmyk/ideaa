@@ -17,7 +17,7 @@ export default function DatenschutzPage() {
       <article className="flex w-full max-w-2xl flex-col gap-8">
         <Link
           href="/geschaeftsidee-validieren"
-          className="self-start text-sm text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] hover:underline"
+          className="-my-2 self-start py-2 text-sm text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] hover:underline"
         >
           ← Zurück zur Startseite
         </Link>

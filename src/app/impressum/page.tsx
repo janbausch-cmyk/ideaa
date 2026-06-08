@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import LegalFooter from "@/components/LegalFooter";
 
@@ -13,6 +14,12 @@ export default function ImpressumPage() {
   return (
     <main className="app-backdrop flex min-h-screen flex-col items-center px-6 py-16">
       <article className="flex w-full max-w-2xl flex-col gap-8">
+        <Link
+          href="/"
+          className="self-start text-sm text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] hover:underline"
+        >
+          ← Zurück zur Startseite
+        </Link>
         <header>
           <h1 className="text-3xl font-bold tracking-tight text-[color:var(--foreground)] sm:text-4xl">
             Impressum

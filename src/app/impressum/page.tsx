@@ -15,7 +15,7 @@ export default function ImpressumPage() {
     <main className="app-backdrop flex min-h-screen flex-col items-center px-6 py-16">
       <article className="flex w-full max-w-2xl flex-col gap-8">
         <Link
-          href="/"
+          href="/geschaeftsidee-validieren"
           className="self-start text-sm text-[color:var(--foreground-muted)] hover:text-[color:var(--foreground)] hover:underline"
         >
           ← Zurück zur Startseite

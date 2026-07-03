@@ -304,6 +304,21 @@ body {
   .analysis-report code {
     background: #f3f3f3 !important;
   }
+  .process-flowchart-section {
+    page-break-inside: avoid;
+    break-inside: avoid-page;
+  }
+  .process-flowchart svg {
+    max-width: 100% !important;
+    height: auto !important;
+    background: #ffffff !important;
+  }
+}
+
+.process-flowchart svg {
+  max-width: 100%;
+  height: auto;
+  min-width: 480px;
 }
 
 @keyframes ideaa-fade-in {

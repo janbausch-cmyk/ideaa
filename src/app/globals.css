@@ -675,10 +675,60 @@ body {
   }
 }
 
+.process-flowchart {
+  padding: 4px 2px;
+}
 .process-flowchart svg {
   max-width: 100%;
   height: auto;
-  min-width: 480px;
+  min-width: 640px;
+}
+/* Rounded process cards + cluster (swim-lane) chrome that Mermaid cannot
+   express via classDef alone. */
+.process-flowchart svg .node rect,
+.process-flowchart svg .node polygon {
+  rx: 10px;
+  ry: 10px;
+}
+.process-flowchart svg .cluster rect {
+  rx: 14px;
+  ry: 14px;
+  fill: color-mix(in srgb, var(--brand-via) 6%, transparent);
+  stroke: color-mix(in srgb, var(--brand-via) 30%, transparent);
+  stroke-width: 1px;
+}
+.process-flowchart svg .cluster text,
+.process-flowchart svg .cluster .cluster-label span {
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  fill: color-mix(in srgb, var(--brand-ink) 85%, transparent);
+}
+.process-flowchart svg .edgeLabel,
+.process-flowchart svg .edgeLabel span,
+.process-flowchart svg .edgeLabel p {
+  background: var(--surface) !important;
+  color: var(--foreground) !important;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 999px;
+}
+.process-flowchart svg .nodeLabel b,
+.process-flowchart svg .nodeLabel strong {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--brand-ink) 75%, transparent);
+  margin-bottom: 2px;
+}
+@media (max-width: 640px) {
+  .process-flowchart svg {
+    min-width: 520px;
+  }
 }
 
 @keyframes ideaa-fade-in {

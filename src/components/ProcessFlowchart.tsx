@@ -28,8 +28,20 @@ export default function ProcessFlowchart({ definition, ideaId }: Props) {
             fontFamily:
               "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
             fontSize: "14px",
+            clusterBkg: "#faf9ff",
+            clusterBorder: "#d8d3f0",
+            lineColor: "#8b5cf6",
+            edgeLabelBackground: "#ffffff",
+            primaryTextColor: "#1e1b4b",
           },
-          flowchart: { htmlLabels: true, curve: "basis" },
+          flowchart: {
+            htmlLabels: true,
+            curve: "basis",
+            padding: 18,
+            nodeSpacing: 40,
+            rankSpacing: 60,
+            useMaxWidth: true,
+          },
         });
         const id = `flowchart-${ideaId.replace(/[^a-zA-Z0-9]/g, "")}`;
         const result = await mermaid.render(id, definition);

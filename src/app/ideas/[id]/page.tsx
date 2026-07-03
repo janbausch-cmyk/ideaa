@@ -11,8 +11,11 @@ import FavoriteButton from "@/components/FavoriteButton";
 import IdeaStatusPoll from "@/components/IdeaStatusPoll";
 import LegalFooter from "@/components/LegalFooter";
 import PrintButton from "@/components/PrintButton";
+import ProcessFlowchart from "@/components/ProcessFlowchart";
 import RecordHistoryEntry from "@/components/RecordHistoryEntry";
 import { getIdea } from "@/lib/db";
+import { buildMermaidDefinition, type MermaidLang } from "@/lib/flowchart-mermaid";
+import { parseFlowchart } from "@/lib/flowchart-parser";
 
 export const dynamic = "force-dynamic";
 
@@ -206,6 +209,15 @@ export default async function IdeaPage({
         {status.tone === "ready" && idea.analysis_report
           ? (() => {
               const { report, plan } = splitReportAndPlan(idea.analysis_report);
+              const flowchart = plan ? parseFlowchart(plan) : null;
+              const lang: MermaidLang = /[wW]oche|Tag \d|Entscheidungs|Umsetz/.test(
+                plan ?? "",
+              )
+                ? "de"
+                : "en";
+              const mermaidDef = flowchart
+                ? buildMermaidDefinition(flowchart, lang)
+                : null;
               return (
                 <>
                   <section className="surface-card flex flex-col gap-3 p-6 sm:p-7">
@@ -224,6 +236,19 @@ export default async function IdeaPage({
                           {plan}
                         </ReactMarkdown>
                       </article>
+                    </section>
+                  ) : null}
+                  {mermaidDef ? (
+                    <section className="surface-card process-flowchart-section flex flex-col gap-3 p-6 sm:p-7">
+                      <h2 className="eyebrow">Prozess-Flussdiagramm</h2>
+                      <p className="text-xs text-[color:var(--foreground-muted)]">
+                        Woche-für-Woche-Ablauf mit Entscheidungs-Gates
+                        (grün=weiter, gelb=pivot, rot=stopp).
+                      </p>
+                      <ProcessFlowchart
+                        definition={mermaidDef}
+                        ideaId={idea.id}
+                      />
                     </section>
                   ) : null}
                 </>

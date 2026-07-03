@@ -10,10 +10,10 @@ import CopyLinkButton from "@/components/CopyLinkButton";
 import FavoriteButton from "@/components/FavoriteButton";
 import IdeaStatusPoll from "@/components/IdeaStatusPoll";
 import LegalFooter from "@/components/LegalFooter";
-import IdeaLifecycle from "@/components/IdeaLifecycle";
 import PrintButton from "@/components/PrintButton";
 import RecordHistoryEntry from "@/components/RecordHistoryEntry";
 import RiskAssessment from "@/components/RiskAssessment";
+import ValidationTodoList from "@/components/ValidationTodoList";
 import { getIdea } from "@/lib/db";
 import { parseFlowchart } from "@/lib/flowchart-parser";
 import { parseRiskAssessment } from "@/lib/risk-parser";
@@ -241,7 +241,11 @@ export default async function IdeaPage({
                     </section>
                   ) : null}
                   {flowchart ? (
-                    <IdeaLifecycle data={flowchart} lang={lang} />
+                    <ValidationTodoList
+                      goal={idea.raw_text}
+                      data={flowchart}
+                      lang={lang}
+                    />
                   ) : null}
                 </>
               );

@@ -13,9 +13,11 @@ import LegalFooter from "@/components/LegalFooter";
 import PrintButton from "@/components/PrintButton";
 import ProcessFlowchart from "@/components/ProcessFlowchart";
 import RecordHistoryEntry from "@/components/RecordHistoryEntry";
+import RiskAssessment from "@/components/RiskAssessment";
 import { getIdea } from "@/lib/db";
 import { buildMermaidDefinition, type MermaidLang } from "@/lib/flowchart-mermaid";
 import { parseFlowchart } from "@/lib/flowchart-parser";
+import { parseRiskAssessment } from "@/lib/risk-parser";
 
 export const dynamic = "force-dynamic";
 
@@ -218,8 +220,12 @@ export default async function IdeaPage({
               const mermaidDef = flowchart
                 ? buildMermaidDefinition(flowchart, lang)
                 : null;
+              const riskAssessment = parseRiskAssessment(idea.analysis_report);
               return (
                 <>
+                  {riskAssessment ? (
+                    <RiskAssessment data={riskAssessment} />
+                  ) : null}
                   <section className="surface-card flex flex-col gap-3 p-6 sm:p-7">
                     <h2 className="eyebrow">Validierungsbericht</h2>
                     <article className="analysis-report">

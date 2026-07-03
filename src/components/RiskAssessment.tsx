@@ -9,100 +9,189 @@ type Props = {
 };
 
 type SeverityMeta = {
-  emoji: string;
   label: string;
+  short: string;
   helper: string;
-  ringClass: string;
-  chipClass: string;
-  dotClass: string;
-  bandClass: string;
+  accentVar: string; // CSS custom property that holds the accent color
+  // Position of the marker on the 0..1 gradient track. Roughly aligned with
+  // the 3-stop gradient: low=0.15, medium=0.5, high=0.85.
+  meterPosition: number;
 };
 
 const SEVERITY_META: Record<RiskSeverity, SeverityMeta> = {
   low: {
-    emoji: "🟢",
     label: "Geringes Risiko",
+    short: "Gering",
     helper: "Wenige oder gut mitigierbare Risiken.",
-    ringClass: "ring-1 ring-emerald-300/60 dark:ring-emerald-800/50",
-    chipClass:
-      "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-800/60",
-    dotClass: "bg-emerald-500",
-    bandClass: "bg-emerald-500",
+    accentVar: "var(--risk-low)",
+    meterPosition: 0.15,
   },
   medium: {
-    emoji: "🟡",
     label: "Mittleres Risiko",
+    short: "Mittel",
     helper: "Mehrere reale Risiken mit klaren Kill-Kriterien.",
-    ringClass: "ring-1 ring-amber-300/60 dark:ring-amber-800/50",
-    chipClass:
-      "bg-amber-50 text-amber-900 border-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-800/60",
-    dotClass: "bg-amber-500",
-    bandClass: "bg-amber-500",
+    accentVar: "var(--risk-medium)",
+    meterPosition: 0.5,
   },
   high: {
-    emoji: "🔴",
     label: "Hohes Risiko",
+    short: "Hoch",
     helper:
-      "Existenzielle, regulatorische oder plattform-abhängige Risiken vorhanden.",
-    ringClass: "ring-1 ring-rose-300/60 dark:ring-rose-800/50",
-    chipClass:
-      "bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:text-rose-200 dark:border-rose-800/60",
-    dotClass: "bg-rose-500",
-    bandClass: "bg-rose-500",
+      "Existenzielle, regulatorische oder plattform-abhängige Risiken.",
+    accentVar: "var(--risk-high)",
+    meterPosition: 0.85,
   },
 };
 
-const SEVERITY_ORDER: RiskSeverity[] = ["low", "medium", "high"];
-
 export default function RiskAssessment({ data }: Props) {
   const overall = SEVERITY_META[data.overall];
-  const overallIdx = SEVERITY_ORDER.indexOf(data.overall);
+  const highCount = data.risks.filter((r) => r.severity === "high").length;
+  const mediumCount = data.risks.filter((r) => r.severity === "medium").length;
+  const lowCount = data.risks.filter((r) => r.severity === "low").length;
 
   return (
     <section
-      className={`surface-card flex flex-col gap-4 p-6 sm:p-7 ${overall.ringClass}`}
+      className="risk-panel surface-card"
+      style={{ ["--risk-accent" as string]: overall.accentVar }}
       aria-labelledby="risk-assessment-heading"
     >
-      <header className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-3">
+      <div className="risk-panel__header">
+        <div className="risk-panel__heading">
           <h2 id="risk-assessment-heading" className="eyebrow">
             Risikobewertung
           </h2>
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${overall.chipClass}`}
-          >
-            <span aria-hidden>{overall.emoji}</span>
-            <span>{overall.label}</span>
-          </span>
+          <p className="risk-panel__subhead">
+            Automatisch aus §3 des Berichts abgeleitet.
+          </p>
         </div>
-        <p className="text-sm text-[color:var(--foreground-muted)]">
-          {overall.helper} Automatisch aus §3 des Berichts abgeleitet.
-        </p>
-        <div
-          className="flex h-2 w-full overflow-hidden rounded-full bg-[color:var(--surface-muted)]"
-          role="img"
-          aria-label={`Gesamtbewertung: ${overall.label}`}
-        >
-          {SEVERITY_ORDER.map((sev, idx) => {
-            const active = idx <= overallIdx;
-            return (
-              <div
-                key={sev}
-                className={`flex-1 transition ${
-                  active ? SEVERITY_META[sev].bandClass : "opacity-25"
-                } ${active ? "" : SEVERITY_META[sev].bandClass}`}
-              />
-            );
-          })}
-        </div>
-      </header>
 
-      <ul className="flex flex-col gap-2.5">
+        <div className="risk-panel__hero">
+          <RiskGauge severity={data.overall} />
+          <div className="risk-panel__hero-text">
+            <span className="risk-panel__label">{overall.label}</span>
+            <span className="risk-panel__helper">{overall.helper}</span>
+            <div className="risk-panel__breakdown">
+              <RiskBadge count={highCount} severity="high" />
+              <RiskBadge count={mediumCount} severity="medium" />
+              <RiskBadge count={lowCount} severity="low" />
+            </div>
+          </div>
+        </div>
+
+        <RiskMeter position={overall.meterPosition} label={overall.label} />
+      </div>
+
+      <ul className="risk-panel__list">
         {data.risks.map((risk, idx) => (
           <RiskCard key={idx} risk={risk} index={idx} />
         ))}
       </ul>
     </section>
+  );
+}
+
+function RiskGauge({ severity }: { severity: RiskSeverity }) {
+  const meta = SEVERITY_META[severity];
+  // Value 0..100 for the arc fill. Roughly matches meterPosition but scaled.
+  const value =
+    severity === "low" ? 22 : severity === "medium" ? 58 : 88;
+  // Arc geometry: 180° semicircle from (10,60) to (110,60), radius 50.
+  const radius = 50;
+  const circumference = Math.PI * radius;
+  const dashOffset = circumference * (1 - value / 100);
+
+  return (
+    <div className="risk-gauge" role="img" aria-label={meta.label}>
+      <svg
+        viewBox="0 0 120 72"
+        className="risk-gauge__svg"
+        aria-hidden
+      >
+        <defs>
+          <linearGradient id="riskGaugeTrack" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="var(--risk-low)" />
+            <stop offset="50%" stopColor="var(--risk-medium)" />
+            <stop offset="100%" stopColor="var(--risk-high)" />
+          </linearGradient>
+        </defs>
+        {/* Track */}
+        <path
+          d="M 10 60 A 50 50 0 0 1 110 60"
+          fill="none"
+          stroke="var(--risk-track)"
+          strokeWidth="10"
+          strokeLinecap="round"
+        />
+        {/* Value arc, colored by severity */}
+        <path
+          d="M 10 60 A 50 50 0 0 1 110 60"
+          fill="none"
+          stroke="url(#riskGaugeTrack)"
+          strokeWidth="10"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={dashOffset}
+          style={{ transition: "stroke-dashoffset 400ms ease" }}
+        />
+      </svg>
+      <div className="risk-gauge__center">
+        <span
+          className="risk-gauge__glyph"
+          style={{ backgroundColor: meta.accentVar }}
+          aria-hidden
+        />
+      </div>
+    </div>
+  );
+}
+
+function RiskMeter({
+  position,
+  label,
+}: {
+  position: number;
+  label: string;
+}) {
+  const pct = Math.max(4, Math.min(96, position * 100));
+  return (
+    <div
+      className="risk-meter"
+      role="img"
+      aria-label={`Gesamtbewertung: ${label}`}
+    >
+      <div className="risk-meter__track" />
+      <div className="risk-meter__scale" aria-hidden>
+        <span>Gering</span>
+        <span>Mittel</span>
+        <span>Hoch</span>
+      </div>
+      <div
+        className="risk-meter__marker"
+        style={{ left: `${pct}%` }}
+        aria-hidden
+      />
+    </div>
+  );
+}
+
+function RiskBadge({
+  count,
+  severity,
+}: {
+  count: number;
+  severity: RiskSeverity;
+}) {
+  if (count === 0) return null;
+  const meta = SEVERITY_META[severity];
+  return (
+    <span
+      className="risk-badge"
+      style={{ ["--risk-badge-color" as string]: meta.accentVar }}
+    >
+      <span className="risk-badge__dot" aria-hidden />
+      <span className="risk-badge__count">{count}</span>
+      <span className="risk-badge__label">{meta.short}</span>
+    </span>
   );
 }
 
@@ -118,68 +207,45 @@ function RiskCard({
   const hasMore = risk.body.trim().length > risk.title.trim().length + 20;
 
   return (
-    <li>
-      <div
-        className={`surface-card-flat flex flex-col gap-2 p-4 ${meta.ringClass}`}
-      >
-        <div className="flex items-start gap-3">
-          <span
-            className={`mt-1 inline-flex h-2.5 w-2.5 flex-shrink-0 rounded-full ${meta.dotClass}`}
-            aria-hidden
-          />
-          <div className="flex flex-1 flex-col gap-1">
-            <div className="flex flex-wrap items-baseline gap-2">
-              <span className="text-xs font-mono text-[color:var(--foreground-muted)]">
-                #{index + 1}
-              </span>
-              <h3 className="text-sm font-semibold leading-snug text-[color:var(--foreground)]">
-                {risk.title}
-              </h3>
-            </div>
-            {risk.killCriterion ? (
-              <p className="text-xs text-[color:var(--foreground-muted)]">
-                <span className="font-semibold text-[color:var(--foreground)]">
-                  Kill-Kriterium:
-                </span>{" "}
-                {risk.killCriterion}
-              </p>
-            ) : null}
+    <li
+      className="risk-card"
+      style={{ ["--risk-accent" as string]: meta.accentVar }}
+    >
+      <div className="risk-card__accent" aria-hidden />
+      <div className="risk-card__body">
+        <div className="risk-card__row">
+          <div className="risk-card__title-block">
+            <span className="risk-card__index">{index + 1}</span>
+            <h3 className="risk-card__title">{risk.title}</h3>
           </div>
-          <span
-            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${meta.chipClass}`}
-          >
-            {severityShort(risk.severity)}
-          </span>
+          <span className="risk-card__chip">{meta.short}</span>
         </div>
+        {risk.killCriterion ? (
+          <p className="risk-card__kill">
+            <span className="risk-card__kill-label">Kill-Kriterium</span>
+            <span className="risk-card__kill-text">{risk.killCriterion}</span>
+          </p>
+        ) : null}
         {hasMore ? (
           <>
             <button
               type="button"
               onClick={() => setOpen((v) => !v)}
-              className="no-print self-start text-xs font-medium text-[color:var(--brand-ink)] transition hover:underline"
+              className="risk-card__toggle no-print"
               aria-expanded={open}
             >
               {open ? "Weniger anzeigen" : "Details anzeigen"}
+              <span
+                className={`risk-card__caret ${open ? "risk-card__caret--open" : ""}`}
+                aria-hidden
+              >
+                ›
+              </span>
             </button>
-            {open ? (
-              <p className="text-xs leading-relaxed text-[color:var(--foreground)]">
-                {risk.body}
-              </p>
-            ) : null}
+            {open ? <p className="risk-card__details">{risk.body}</p> : null}
           </>
         ) : null}
       </div>
     </li>
   );
-}
-
-function severityShort(sev: RiskSeverity): string {
-  switch (sev) {
-    case "high":
-      return "Hoch";
-    case "medium":
-      return "Mittel";
-    case "low":
-      return "Gering";
-  }
 }

@@ -9,7 +9,10 @@
 export type WeekStep = {
   index: number; // 1..4
   label: string; // e.g. "Woche 1"
-  headline: string; // short action headline (first ~80 chars of the bullet body)
+  headline: string; // combined headline for callers that just want a summary
+  action?: string; // Aktion / Action sub-line (before "Test:")
+  test?: string; // Test sub-line
+  metric?: string; // Success/Metrik sub-line
 };
 
 export type GateDecision = "kill" | "pivot" | "continue";
@@ -75,11 +78,76 @@ function extractWeeks(body: string): WeekStep[] {
     if (/^(day|tag|dag|día|dia|jour)$/i.test(noun)) continue;
     if (seen.has(idx)) continue;
     seen.add(idx);
-    const headline = truncate(cleanBullet(m[4]), 120);
-    weeks.push({ index: idx, label: `${noun} ${idx}`, headline });
+    const cleaned = cleanBullet(m[4]);
+    const parts = splitWeekParts(cleaned);
+    const headline = truncate(cleaned, 120);
+    weeks.push({
+      index: idx,
+      label: `${noun} ${idx}`,
+      headline,
+      action: parts.action,
+      test: parts.test,
+      metric: parts.metric,
+    });
   }
   weeks.sort((a, b) => a.index - b.index);
   return weeks;
+}
+
+// Markers used by the LLM prompt for the three sub-fields of a week bullet.
+// Kept short and case-insensitive; multilingual variants are covered by
+// separate options.
+const TEST_MARKER =
+  /\b(?:Test|Prueba|Testen)\s*:\s*/i;
+const METRIC_MARKER =
+  /\b(?:Success|Erfolg(?:smetrik)?|Metrik|Metric|M[eé]trica|R[eé]ussite|Succ[eè]s|Zielmetrik)\s*:\s*/i;
+const FAILURE_MARKER =
+  /\b(?:Failure|Misserfolg|Fehler|Fracaso|Kill|Abbruch|Stopp?|[EÉé]chec)\s*:\s*/i;
+
+function splitWeekParts(clean: string): {
+  action?: string;
+  test?: string;
+  metric?: string;
+} {
+  const testM = TEST_MARKER.exec(clean);
+  const metricM = METRIC_MARKER.exec(clean);
+  const failureM = FAILURE_MARKER.exec(clean);
+
+  let action: string | undefined;
+  let test: string | undefined;
+  let metric: string | undefined;
+
+  const trimEnd = (s: string) =>
+    s.replace(/[\s.,;:—–\-]+$/, "").trim();
+
+  if (testM) {
+    action = trimEnd(clean.slice(0, testM.index));
+    const testStart = testM.index + testM[0].length;
+    const testEnd =
+      metricM && metricM.index > testM.index
+        ? metricM.index
+        : failureM && failureM.index > testM.index
+          ? failureM.index
+          : clean.length;
+    test = trimEnd(clean.slice(testStart, testEnd));
+  }
+
+  if (metricM) {
+    if (!testM) {
+      action = trimEnd(clean.slice(0, metricM.index));
+    }
+    const metricStart = metricM.index + metricM[0].length;
+    const metricEnd =
+      failureM && failureM.index > metricM.index
+        ? failureM.index
+        : clean.length;
+    metric = trimEnd(clean.slice(metricStart, metricEnd));
+  }
+
+  // Truncate for display; leave undefined when empty.
+  const t = (s: string | undefined) =>
+    s && s.length > 0 ? truncate(s, 100) : undefined;
+  return { action: t(action), test: t(test), metric: t(metric) };
 }
 
 // Extract gate bullets from §9 body. Accepts:

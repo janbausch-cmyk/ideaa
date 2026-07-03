@@ -10,12 +10,11 @@ import CopyLinkButton from "@/components/CopyLinkButton";
 import FavoriteButton from "@/components/FavoriteButton";
 import IdeaStatusPoll from "@/components/IdeaStatusPoll";
 import LegalFooter from "@/components/LegalFooter";
+import IdeaLifecycle from "@/components/IdeaLifecycle";
 import PrintButton from "@/components/PrintButton";
-import ProcessFlowchart from "@/components/ProcessFlowchart";
 import RecordHistoryEntry from "@/components/RecordHistoryEntry";
 import RiskAssessment from "@/components/RiskAssessment";
 import { getIdea } from "@/lib/db";
-import { buildMermaidDefinition, type MermaidLang } from "@/lib/flowchart-mermaid";
 import { parseFlowchart } from "@/lib/flowchart-parser";
 import { parseRiskAssessment } from "@/lib/risk-parser";
 
@@ -212,14 +211,11 @@ export default async function IdeaPage({
           ? (() => {
               const { report, plan } = splitReportAndPlan(idea.analysis_report);
               const flowchart = plan ? parseFlowchart(plan) : null;
-              const lang: MermaidLang = /[wW]oche|Tag \d|Entscheidungs|Umsetz/.test(
+              const lang: "de" | "en" = /[wW]oche|Tag \d|Entscheidungs|Umsetz/.test(
                 plan ?? "",
               )
                 ? "de"
                 : "en";
-              const mermaidDef = flowchart
-                ? buildMermaidDefinition(flowchart, lang)
-                : null;
               const riskAssessment = parseRiskAssessment(idea.analysis_report);
               return (
                 <>
@@ -244,18 +240,8 @@ export default async function IdeaPage({
                       </article>
                     </section>
                   ) : null}
-                  {mermaidDef ? (
-                    <section className="surface-card process-flowchart-section flex flex-col gap-3 p-6 sm:p-7">
-                      <h2 className="eyebrow">Prozess-Flussdiagramm</h2>
-                      <p className="text-xs text-[color:var(--foreground-muted)]">
-                        Woche-für-Woche-Ablauf mit Entscheidungs-Gates
-                        (grün=weiter, gelb=pivot, rot=stopp).
-                      </p>
-                      <ProcessFlowchart
-                        definition={mermaidDef}
-                        ideaId={idea.id}
-                      />
-                    </section>
+                  {flowchart ? (
+                    <IdeaLifecycle data={flowchart} lang={lang} />
                   ) : null}
                 </>
               );

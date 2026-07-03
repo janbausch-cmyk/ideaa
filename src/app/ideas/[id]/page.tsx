@@ -10,7 +10,7 @@ import CopyLinkButton from "@/components/CopyLinkButton";
 import FavoriteButton from "@/components/FavoriteButton";
 import IdeaStatusPoll from "@/components/IdeaStatusPoll";
 import LegalFooter from "@/components/LegalFooter";
-import IdeaLifecycle from "@/components/IdeaLifecycle";
+import IdeaTodoList from "@/components/IdeaTodoList";
 import PrintButton from "@/components/PrintButton";
 import RecordHistoryEntry from "@/components/RecordHistoryEntry";
 import RiskAssessment from "@/components/RiskAssessment";
@@ -241,7 +241,7 @@ export default async function IdeaPage({
                     </section>
                   ) : null}
                   {flowchart ? (
-                    <IdeaLifecycle data={flowchart} lang={lang} />
+                    <IdeaTodoList data={flowchart} lang={lang} />
                   ) : null}
                 </>
               );

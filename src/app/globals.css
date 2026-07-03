@@ -647,36 +647,35 @@ body {
   .analysis-report code {
     background: #f3f3f3 !important;
   }
-  .lifecycle-panel {
+  .todo-panel {
     page-break-inside: avoid;
     break-inside: avoid-page;
   }
-  .lifecycle-scroll {
-    overflow: visible !important;
-  }
-  .lifecycle-timeline {
-    min-width: auto !important;
+  .todo-milestone,
+  .todo-gate {
+    page-break-inside: avoid;
+    break-inside: avoid-page;
   }
 }
 
 /* ============================================================
-   Idea Lifecycle (horizontal timeline replacing the old flowchart)
+   Idea Todo List (Oberziel → Meilensteine → Maßnahmen)
    ============================================================ */
 
-.lifecycle-panel {
+.todo-panel {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
   padding: 1.5rem;
   position: relative;
   overflow: hidden;
 }
 @media (min-width: 640px) {
-  .lifecycle-panel {
+  .todo-panel {
     padding: 1.75rem;
   }
 }
-.lifecycle-panel::before {
+.todo-panel::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -687,147 +686,81 @@ body {
     transparent 55%
   );
 }
-.lifecycle-panel > * {
+.todo-panel > * {
   position: relative;
 }
-.lifecycle-panel__header {
+.todo-panel__header {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
 }
-.lifecycle-panel__subhead {
+.todo-panel__subhead {
   font-size: 0.8125rem;
   color: var(--foreground-muted);
   margin: 0;
 }
 
-.lifecycle-scroll {
-  overflow-x: auto;
-  overflow-y: visible;
-  margin: 0 -0.5rem;
-  padding: 0 0.5rem 0.75rem;
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--brand-via) 40%, transparent)
-    transparent;
-}
-.lifecycle-scroll::-webkit-scrollbar {
-  height: 8px;
-}
-.lifecycle-scroll::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--brand-via) 30%, transparent);
-  border-radius: 999px;
-}
-
-.lifecycle-timeline {
-  position: relative;
+/* Oberziel banner */
+.todo-goal {
   display: flex;
-  align-items: stretch;
-  gap: 0;
-  min-width: 960px;
-  padding: 60px 0 4px;
-}
-.lifecycle-track {
-  position: absolute;
-  left: 24px;
-  right: 24px;
-  top: 48px;
-  height: 6px;
-  border-radius: 999px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  color: #ffffff;
   background: linear-gradient(
-    90deg,
+    135deg,
     var(--brand-from) 0%,
-    var(--brand-via) 50%,
+    var(--brand-via) 55%,
     var(--brand-to) 100%
   );
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--foreground) 8%, transparent),
-    0 8px 24px -12px color-mix(in srgb, var(--brand-via) 55%, transparent);
+  box-shadow: 0 14px 30px -18px color-mix(in srgb, var(--brand-via) 65%, transparent);
 }
-
-.lifecycle-cluster {
-  display: flex;
-  align-items: stretch;
-  flex: 0 0 auto;
-}
-.lifecycle-cluster--endpoint {
-  padding: 0 4px;
-}
-
-/* Endpoint node (Start / v0) */
-.lifecycle-node {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 128px;
-  gap: 0.75rem;
-  padding-top: 12px;
-}
-.lifecycle-node__pin {
-  --pin-color: var(--brand-ink);
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  background: var(--surface);
-  border: 3px solid var(--pin-color);
-  box-shadow:
-    0 0 0 4px color-mix(in srgb, var(--pin-color) 12%, transparent),
-    0 6px 16px -6px color-mix(in srgb, var(--pin-color) 45%, transparent);
-  position: relative;
-  z-index: 2;
-}
-.lifecycle-node--start .lifecycle-node__pin {
-  --pin-color: var(--brand-from);
-}
-.lifecycle-node--end .lifecycle-node__pin {
-  --pin-color: var(--risk-low);
-}
-.lifecycle-node__body {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 2px;
-}
-.lifecycle-node__eyebrow {
+.todo-goal__eyebrow {
   font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-weight: 800;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--foreground-muted);
+  color: color-mix(in srgb, white 90%, transparent);
 }
-.lifecycle-node__title {
-  font-size: 0.9375rem;
+.todo-goal__text {
+  font-size: 1rem;
   font-weight: 700;
-  color: var(--foreground);
-  line-height: 1.2;
+  line-height: 1.3;
+  margin: 0;
 }
 
-/* Week */
-.lifecycle-week {
-  --tone: var(--brand-via);
-  --tone-soft: color-mix(in srgb, var(--tone) 14%, transparent);
+/* Milestone list */
+.todo-milestones {
+  list-style: none;
+  padding: 0;
+  margin: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  width: 220px;
-  padding: 0 12px;
+  gap: 14px;
+  counter-reset: todo-milestone;
+}
+.todo-milestone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px 16px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 28px -22px color-mix(in srgb, var(--brand-via) 45%, transparent);
+}
+.todo-milestone__header {
+  display: flex;
+  align-items: flex-start;
   gap: 12px;
 }
-.lifecycle-week--from {
-  --tone: var(--brand-from);
-}
-.lifecycle-week--via {
+.todo-milestone__index {
   --tone: var(--brand-via);
-}
-.lifecycle-week--to {
-  --tone: var(--brand-to);
-}
-.lifecycle-week--ink {
-  --tone: var(--brand-ink);
-}
-.lifecycle-week__pin {
-  width: 48px;
-  height: 48px;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
   border-radius: 999px;
   background: linear-gradient(
     140deg,
@@ -839,49 +772,43 @@ body {
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  font-size: 1.05rem;
-  border: 3px solid var(--surface);
-  box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--tone) 20%, transparent),
-    0 10px 24px -10px color-mix(in srgb, var(--tone) 55%, transparent);
-  position: relative;
-  z-index: 2;
+  font-size: 0.95rem;
+  box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--brand-via) 55%, transparent);
 }
-.lifecycle-week__card {
-  background: var(--surface);
-  border: 1px solid color-mix(in srgb, var(--tone) 28%, var(--border));
-  border-radius: 16px;
-  padding: 12px 14px 14px;
-  width: 100%;
+.todo-milestone:nth-child(4n + 1) .todo-milestone__index {
+  --tone: var(--brand-from);
+}
+.todo-milestone:nth-child(4n + 2) .todo-milestone__index {
+  --tone: var(--brand-via);
+}
+.todo-milestone:nth-child(4n + 3) .todo-milestone__index {
+  --tone: var(--brand-to);
+}
+.todo-milestone:nth-child(4n) .todo-milestone__index {
+  --tone: var(--brand-ink);
+}
+.todo-milestone__title-block {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  box-shadow: 0 12px 28px -18px color-mix(in srgb, var(--tone) 45%, transparent);
-  position: relative;
+  gap: 2px;
+  min-width: 0;
 }
-.lifecycle-week__card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 12px;
-  right: 12px;
-  height: 3px;
-  border-radius: 0 0 999px 999px;
-  background: linear-gradient(
-    90deg,
-    var(--tone) 0%,
-    color-mix(in srgb, var(--tone) 55%, transparent) 100%
-  );
-}
-.lifecycle-week__label {
+.todo-milestone__eyebrow {
   font-size: 0.6875rem;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--tone) 80%, var(--foreground));
-  margin-top: 4px;
+  color: var(--foreground-muted);
 }
-.lifecycle-week__rows {
+.todo-milestone__headline {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--foreground);
+  line-height: 1.3;
+}
+
+/* Measures */
+.todo-measures {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -889,154 +816,145 @@ body {
   flex-direction: column;
   gap: 6px;
 }
-.lifecycle-row {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 6px 0 6px;
-  border-top: 1px dashed color-mix(in srgb, var(--foreground) 10%, transparent);
+.todo-measure {
+  display: grid;
+  grid-template-columns: 20px auto 1fr;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--brand-via) 4%, var(--surface-muted));
+  border: 1px solid color-mix(in srgb, var(--brand-via) 12%, var(--border));
 }
-.lifecycle-row:first-child {
-  border-top: none;
-  padding-top: 2px;
+.todo-checkbox {
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  border: 1.5px solid color-mix(in srgb, var(--brand-ink) 45%, var(--border));
+  background: var(--surface);
+  align-self: center;
+  box-shadow: inset 0 0 0 2px var(--surface);
 }
-.lifecycle-row__label {
+.todo-measure__label {
   font-size: 0.625rem;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: var(--foreground-muted);
+  color: color-mix(in srgb, var(--brand-ink) 65%, var(--foreground-muted));
+  white-space: nowrap;
 }
-.lifecycle-row__text {
+.todo-measure__text {
   font-size: 0.8125rem;
-  line-height: 1.35;
+  line-height: 1.4;
   color: var(--foreground);
+  overflow-wrap: anywhere;
 }
-.lifecycle-week__fallback {
+.todo-measure--metric .todo-measure__label {
+  color: color-mix(in srgb, var(--risk-low) 60%, var(--foreground));
+}
+.todo-measure--test .todo-measure__label {
+  color: color-mix(in srgb, var(--brand-via) 65%, var(--foreground));
+}
+
+/* Gate row inside a milestone */
+.todo-gate {
+  --gate-color: var(--risk-medium);
+  margin-top: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px dashed color-mix(in srgb, var(--gate-color) 45%, var(--border));
+  background: color-mix(in srgb, var(--gate-color) 8%, var(--surface));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.todo-gate--final {
+  --gate-color: var(--risk-low);
+}
+.todo-gate__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.todo-gate__badge {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: color-mix(in srgb, var(--gate-color) 92%, black);
+  padding: 3px 8px;
+  border-radius: 999px;
+  line-height: 1.1;
+}
+.todo-gate__eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--gate-color) 75%, var(--foreground));
+}
+.todo-gate__summary {
   font-size: 0.8125rem;
   line-height: 1.4;
   color: var(--foreground);
   margin: 0;
 }
-
-/* Gate */
-.lifecycle-gate {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 148px;
-  padding: 0 4px;
-  gap: 12px;
-}
-.lifecycle-gate__diamond {
-  width: 56px;
-  height: 56px;
-  transform: rotate(45deg);
-  border-radius: 12px;
-  background: linear-gradient(
-    140deg,
-    color-mix(in srgb, var(--risk-medium) 92%, white) 0%,
-    color-mix(in srgb, var(--risk-medium) 78%, black) 100%
-  );
-  color: #78350f;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 3px solid var(--surface);
-  box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--risk-medium) 25%, transparent),
-    0 10px 24px -10px color-mix(in srgb, var(--risk-medium) 55%, transparent);
-  position: relative;
-  z-index: 2;
-  margin-top: -4px;
-}
-.lifecycle-gate__diamond-inner {
-  transform: rotate(-45deg);
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  line-height: 1;
-  text-align: center;
-}
-.lifecycle-gate__day {
-  white-space: nowrap;
-}
-.lifecycle-gate__body {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-  align-items: center;
-  padding-top: 4px;
-}
-.lifecycle-gate__eyebrow {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--foreground-muted);
-}
-.lifecycle-gate__paths {
+.todo-gate__decisions {
   list-style: none;
   padding: 0;
   margin: 0;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  width: 100%;
+  flex-wrap: wrap;
+  gap: 6px;
 }
-.lifecycle-path {
+.todo-decision {
   --path-color: var(--brand-ink);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px;
+  padding: 3px 10px 3px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--path-color) 8%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--path-color) 22%, transparent);
+  background: color-mix(in srgb, var(--path-color) 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--path-color) 30%, transparent);
   font-size: 0.75rem;
   line-height: 1.15;
 }
-.lifecycle-path--continue {
+.todo-decision--continue {
   --path-color: var(--risk-low);
 }
-.lifecycle-path--pivot {
+.todo-decision--pivot {
   --path-color: var(--risk-medium);
 }
-.lifecycle-path--kill {
+.todo-decision--kill {
   --path-color: var(--risk-high);
 }
-.lifecycle-path__dot {
+.todo-decision__dot {
   width: 8px;
   height: 8px;
   border-radius: 999px;
   background: var(--path-color);
   flex-shrink: 0;
-  box-shadow: 0 0 0 2px
-    color-mix(in srgb, var(--path-color) 22%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--path-color) 22%, transparent);
 }
-.lifecycle-path__label {
+.todo-decision__label {
   font-weight: 700;
-  color: color-mix(in srgb, var(--path-color) 75%, var(--foreground));
-  white-space: nowrap;
-}
-.lifecycle-path__text {
-  color: var(--foreground-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
+  color: color-mix(in srgb, var(--path-color) 78%, var(--foreground));
   white-space: nowrap;
 }
 
 @media (max-width: 640px) {
-  .lifecycle-timeline {
-    min-width: 780px;
-    padding-top: 52px;
+  .todo-panel {
+    padding: 1.25rem;
   }
-  .lifecycle-week {
-    width: 180px;
+  .todo-measure {
+    grid-template-columns: 18px auto;
+    row-gap: 2px;
   }
-  .lifecycle-gate {
-    width: 128px;
+  .todo-measure__text {
+    grid-column: 1 / -1;
+    padding-left: 26px;
   }
 }
 

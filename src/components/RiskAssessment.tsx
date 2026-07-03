@@ -92,13 +92,30 @@ export default function RiskAssessment({ data }: Props) {
 
 function RiskGauge({ severity }: { severity: RiskSeverity }) {
   const meta = SEVERITY_META[severity];
-  // Value 0..100 for the arc fill. Roughly matches meterPosition but scaled.
+  // Value 0..100 maps to angle 180°..0° on the semicircle.
+  // 0% → left end (angle 180°), 50% → top (90°), 100% → right end (0°).
   const value =
     severity === "low" ? 22 : severity === "medium" ? 58 : 88;
-  // Arc geometry: 180° semicircle from (10,60) to (110,60), radius 50.
   const radius = 50;
   const circumference = Math.PI * radius;
   const dashOffset = circumference * (1 - value / 100);
+
+  // Needle geometry. Pivot at (60, 60). Angle in degrees, measured from the
+  // positive x-axis (right). 0% risk → 180°, 100% risk → 0°.
+  const angleDeg = 180 - (value / 100) * 180;
+  const angleRad = (angleDeg * Math.PI) / 180;
+  const needleLength = 42; // slightly inside the arc for a clean look
+  const tipX = 60 + needleLength * Math.cos(angleRad);
+  const tipY = 60 - needleLength * Math.sin(angleRad);
+  // Base of the triangular needle: two points perpendicular to the needle
+  // direction, 4px on each side of the pivot.
+  const baseHalfWidth = 4;
+  const perpX = Math.cos(angleRad + Math.PI / 2);
+  const perpY = -Math.sin(angleRad + Math.PI / 2);
+  const baseLeftX = 60 + baseHalfWidth * perpX;
+  const baseLeftY = 60 + baseHalfWidth * perpY;
+  const baseRightX = 60 - baseHalfWidth * perpX;
+  const baseRightY = 60 - baseHalfWidth * perpY;
 
   return (
     <div className="risk-gauge" role="img" aria-label={meta.label}>
@@ -133,14 +150,22 @@ function RiskGauge({ severity }: { severity: RiskSeverity }) {
           strokeDashoffset={dashOffset}
           style={{ transition: "stroke-dashoffset 400ms ease" }}
         />
-      </svg>
-      <div className="risk-gauge__center">
-        <span
-          className="risk-gauge__glyph"
-          style={{ backgroundColor: meta.accentVar }}
-          aria-hidden
+        {/* Needle: triangle from pivot to tip pointing to the current value */}
+        <polygon
+          points={`${baseLeftX},${baseLeftY} ${tipX},${tipY} ${baseRightX},${baseRightY}`}
+          fill="var(--foreground)"
+          style={{ transition: "all 400ms ease" }}
         />
-      </div>
+        {/* Pivot cap on top of the needle base */}
+        <circle
+          cx="60"
+          cy="60"
+          r="5"
+          fill="var(--surface)"
+          stroke="var(--foreground)"
+          strokeWidth="2"
+        />
+      </svg>
     </div>
   );
 }

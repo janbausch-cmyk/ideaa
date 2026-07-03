@@ -353,23 +353,6 @@ body {
   height: 100%;
   display: block;
 }
-.risk-gauge__center {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 4px;
-  pointer-events: none;
-}
-.risk-gauge__glyph {
-  width: 12px;
-  height: 12px;
-  border-radius: 999px;
-  box-shadow:
-    0 0 0 3px var(--surface),
-    0 2px 6px color-mix(in srgb, currentColor 20%, transparent);
-}
 
 /* Horizontal severity meter */
 .risk-meter {

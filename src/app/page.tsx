@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import AudioRecorder from "@/components/AudioRecorder";
 import BrandWordmark from "@/components/BrandWordmark";
 import LegalFooter from "@/components/LegalFooter";
 import PreviousIdeasList from "@/components/PreviousIdeasList";
@@ -115,6 +116,7 @@ export default async function Home({
             . Bis zu 20 Stück, je 20.000 Zeichen. Sie werden parallel
             analysiert.
           </p>
+          <AudioRecorder textareaId="idea" />
           {errorMessage ? (
             <p className="rounded-lg border border-rose-300/60 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/50 dark:text-rose-300">
               {errorMessage}

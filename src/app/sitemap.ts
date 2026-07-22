@@ -4,7 +4,7 @@ import type { MetadataRoute } from "next";
 // lives at the site root (/). We hardcode the canonical production host because
 // metadataBase falls back to VERCEL_URL (the per-deploy hash hostname), which
 // is not the URL we want search engines to index.
-const SITE = "https://ideaa-two.vercel.app";
+const SITE = "https://ideaa.report";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
@@ -14,12 +14,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: now,
       changeFrequency: "weekly",
       priority: 1,
-    },
-    {
-      url: `${SITE}/geschaeftsidee-validieren`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.9,
     },
     {
       url: `${SITE}/impressum`,

@@ -52,19 +52,19 @@ export async function submitIdea(formData: FormData): Promise<void> {
   const raw = formData.get("idea");
   const text = typeof raw === "string" ? raw.trim() : "";
   if (!text) {
-    redirect("/?error=empty");
+    redirect("/validieren?error=empty");
   }
 
   const ideas = splitBatch(text);
   if (ideas.length === 0) {
-    redirect("/?error=empty");
+    redirect("/validieren?error=empty");
   }
   if (ideas.length > MAX_BATCH) {
-    redirect(`/?error=too-many`);
+    redirect(`/validieren?error=too-many`);
   }
   for (const idea of ideas) {
     if (idea.length > MAX_LEN_PER_IDEA) {
-      redirect("/?error=too-long");
+      redirect("/validieren?error=too-long");
     }
   }
 
@@ -76,12 +76,12 @@ export async function submitIdea(formData: FormData): Promise<void> {
     const limit = getDailyLimit();
     const used = await countRecentSubmissions(ipHash, 24 * 60 * 60);
     if (used >= limit) {
-      redirect(`/?error=daily-limit&limit=${limit}`);
+      redirect(`/validieren?error=daily-limit&limit=${limit}`);
     }
     if (used + ideas.length > limit) {
       const remaining = limit - used;
       redirect(
-        `/?error=daily-limit-partial&limit=${limit}&remaining=${remaining}&attempted=${ideas.length}`,
+        `/validieren?error=daily-limit-partial&limit=${limit}&remaining=${remaining}&attempted=${ideas.length}`,
       );
     }
   }
@@ -91,7 +91,7 @@ export async function submitIdea(formData: FormData): Promise<void> {
     inserted = await insertIdeas(ideas);
   } catch (err) {
     console.error("[submitIdea] insert failed", err);
-    redirect("/?error=insert-failed");
+    redirect("/validieren?error=insert-failed");
   }
 
   // Throttle bookkeeping AFTER the successful insert so a failed insert

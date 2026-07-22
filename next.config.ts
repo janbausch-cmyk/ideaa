@@ -1,7 +1,20 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
-const nextConfig: NextConfig = {};
+const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      // Landing page moved from /geschaeftsidee-validieren to the site root (/).
+      // Keep the old URL alive with a permanent (308) redirect so existing
+      // search-engine entries and shared links still resolve.
+      {
+        source: "/geschaeftsidee-validieren",
+        destination: "/",
+        permanent: true,
+      },
+    ];
+  },
+};
 
 // Wrap with Sentry only when actually configured. Without DSN this would
 // still bundle the Sentry webpack plugin but produce no useful output, so

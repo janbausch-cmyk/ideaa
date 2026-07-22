@@ -1,138 +1,173 @@
-import Link from "next/link";
+import type { Metadata } from "next";
 
-import AudioRecorder from "@/components/AudioRecorder";
 import BrandWordmark from "@/components/BrandWordmark";
 import LegalFooter from "@/components/LegalFooter";
-import PreviousIdeasList from "@/components/PreviousIdeasList";
 
-import { submitIdea } from "./actions";
+import LandingCta from "./LandingCta";
 
-export const dynamic = "force-dynamic";
-// The submit server action kicks the worker tick via after(); a typical
-// analysis takes 60–90s and a 5-idea batch with concurrency 3 needs ~180s.
-// Without this, the after() handler is killed before the second wave of
-// claims completes and rows are stranded in 'running'.
-export const maxDuration = 300;
+const PAGE_PATH = "/";
+const TITLE = "Geschäftsidee validieren: Marktcheck und Plan in 2 Minuten | IDEAA";
+const DESCRIPTION =
+  "Geschäftsidee mit KI validieren: Marktanalyse, Konkurrenzcheck und erster Umsetzungsplan in einem strukturierten Bericht. Kostenlos, ohne Anmeldung.";
 
-type ErrorContext = {
-  limit?: string;
-  remaining?: string;
-  attempted?: string;
+export const metadata: Metadata = {
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: { canonical: PAGE_PATH },
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    url: PAGE_PATH,
+    siteName: "IDEAA",
+    locale: "de_DE",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+  },
 };
 
-function buildErrorMessage(
-  key: string,
-  ctx: ErrorContext,
-): string | null {
-  switch (key) {
-    case "empty":
-      return "Bitte füge eine Idee ein, bevor du absendest.";
-    case "too-long":
-      return "Eine der Ideen ist zu lang (max. 20.000 Zeichen pro Idee).";
-    case "too-many":
-      return "Zu viele Ideen auf einmal (max. 20 pro Durchlauf).";
-    case "insert-failed":
-      return "Deine Idee konnte nicht gespeichert werden. Bitte versuche es erneut.";
-    case "daily-limit": {
-      const limit = ctx.limit ?? "5";
-      return `Tageslimit erreicht. Du kannst pro Tag bis zu ${limit} Ideen einreichen. Probier es morgen wieder.`;
-    }
-    case "daily-limit-partial": {
-      const limit = ctx.limit ?? "5";
-      const remaining = ctx.remaining ?? "0";
-      const attempted = ctx.attempted ?? "?";
-      return `Tageslimit würde überschritten. Du kannst heute noch ${remaining} von ${limit} Ideen einreichen, du hast ${attempted} versucht. Bitte reduziere die Anzahl.`;
-    }
-    default:
-      return null;
-  }
-}
+const FAQ: Array<{ q: string; a: string }> = [
+  {
+    q: "Wie validiere ich eine Geschäftsidee?",
+    a: "Du prüfst systematisch vier Dinge: Gibt es einen echten Markt und eine zahlende Zielgruppe? Wer ist die Konkurrenz, und wo ist die Lücke? Welche Annahmen müssen stimmen? Und was würde die Idee scheitern lassen? Genau diese Schritte nimmt IDEAA dir ab und fasst sie in 60 bis 90 Sekunden in einem Bericht zusammen.",
+  },
+  {
+    q: "Geschäftsidee prüfen, testen oder validieren: Wo ist der Unterschied?",
+    a: "In der Praxis meint das dasselbe: herausfinden, ob deine Idee einen echten Markt, zahlende Kunden und eine realistische Umsetzung hat, bevor du Zeit und Geld investierst. IDEAA übernimmt diesen Schritt und liefert das Ergebnis als Bericht mit Markteinschätzung, Wettbewerb, Risiken und erstem Umsetzungsplan.",
+  },
+  {
+    q: "Woran erkenne ich, ob meine Geschäftsidee Potenzial hat?",
+    a: "Gute Indikatoren sind ein klar benennbares Problem, eine Zielgruppe mit erkennbarer Zahlungsbereitschaft und ein Markt, der groß genug, aber nicht hoffnungslos überfüllt ist. IDEAA bewertet diese Faktoren und macht die größten Risiken sichtbar, bevor du Zeit oder Geld investierst.",
+  },
+  {
+    q: "Reicht eine KI-Validierung, oder muss ich mit echten Kunden sprechen?",
+    a: "Beides gehört zusammen. IDEAA gibt dir in Minuten eine fundierte erste Einschätzung zu Markt, Wettbewerb und Risiken, damit du nicht bei null anfängst. Den finalen Beweis liefern aber immer echte Kundengespräche und ein Vorverkauf. Der Bericht sagt dir, was du als Erstes mit Kunden testen solltest.",
+  },
+  {
+    q: "Was kostet die Validierung?",
+    a: "Aktuell nichts. IDEAA ist in der frühen Produktphase, deshalb erhältst du den vollständigen Bericht ohne Anmeldung oder Bezahlung.",
+  },
+  {
+    q: "Wie lange dauert eine Validierung?",
+    a: "Eine einzelne Idee braucht in der Regel 60 bis 90 Sekunden. Du kannst auch mehrere Ideen parallel einreichen.",
+  },
+  {
+    q: "Was bekomme ich am Ende?",
+    a: "Einen Bericht mit Markteinschätzung, Wettbewerbsumfeld, Zielgruppen-Hypothesen, Risiken und einem ersten Umsetzungsplan.",
+  },
+  {
+    q: "Werden meine Ideen geteilt?",
+    a: "Nein. Jede Idee bekommt eine eigene URL, die nur du kennst. Es gibt keine öffentliche Galerie und keine Weitergabe an Dritte.",
+  },
+];
 
-type SearchParams = Record<string, string | string[] | undefined>;
+export default function LandingPage() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "IDEAA",
+    inLanguage: "de",
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Web",
+    description: DESCRIPTION,
+    url: PAGE_PATH,
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "EUR",
+    },
+    audience: {
+      "@type": "Audience",
+      audienceType: "Gründer, Entrepreneure, Produktmanager",
+    },
+  };
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
-  const params = await searchParams;
-  const errorKey = typeof params.error === "string" ? params.error : null;
-  const errorMessage = errorKey
-    ? buildErrorMessage(errorKey, {
-        limit: typeof params.limit === "string" ? params.limit : undefined,
-        remaining:
-          typeof params.remaining === "string" ? params.remaining : undefined,
-        attempted:
-          typeof params.attempted === "string" ? params.attempted : undefined,
-      })
-    : null;
+  const faqLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FAQ.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
+    })),
+  };
 
   return (
-    <main className="app-backdrop flex min-h-screen flex-col items-center px-6 py-16 sm:py-24">
-      <div className="flex w-full max-w-2xl flex-col gap-8">
-        <header className="flex flex-col items-center gap-4 text-center">
-          <span className="eyebrow">Geschäftsidee einreichen</span>
-          <h1 className="sr-only">IDEAA</h1>
-          <Link href="/geschaeftsidee-validieren" aria-label="IDEAA, zur Startseite">
+    <main className="app-backdrop flex min-h-screen flex-col items-center px-6 py-12 sm:py-20">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
+      />
+
+      <div className="flex w-full max-w-3xl flex-col gap-16">
+        <section className="flex flex-col gap-10">
+          <header className="flex flex-col items-center gap-5 text-center">
             <BrandWordmark
-              className="brand-peak h-14 w-auto transition hover:opacity-80 sm:h-16"
+              className="brand-peak h-10 w-auto sm:h-12"
               title="IDEAA"
             />
-          </Link>
-          <p className="max-w-md text-base text-[color:var(--foreground-muted)] sm:text-lg">
-            Schreib deine Idee unten rein. Du bekommst eine Einschätzung zu
-            Markt, Konkurrenz und Risiken sowie einen ersten Umsetzungsplan.
-          </p>
-        </header>
-
-        <form
-          action={submitIdea}
-          className="surface-card flex flex-col gap-4 p-5 sm:p-6"
-        >
-          <div className="flex items-baseline justify-between">
-            <label
-              htmlFor="idea"
-              className="text-sm font-semibold text-[color:var(--foreground)]"
-            >
-              Deine Idee
-            </label>
-            <span className="text-[10px] uppercase tracking-wider text-[color:var(--foreground-muted)]">
-              bis zu 20 auf einmal
-            </span>
-          </div>
-          <textarea
-            id="idea"
-            name="idea"
-            required
-            rows={10}
-            placeholder={"Eine Abo-Box für…\n\n---\n\nEin Marktplatz, auf dem…"}
-            className="w-full resize-y rounded-xl border border-[color:var(--border)] bg-[color:var(--surface)] px-4 py-3 text-sm leading-relaxed text-[color:var(--foreground)] placeholder:text-[color:var(--foreground-muted)]/70 shadow-inner focus:border-[color:var(--brand-ink)]/60 focus:outline-none focus:ring-2 focus:ring-[color:var(--brand-ink)]/20"
-          />
-          <p className="text-xs text-[color:var(--foreground-muted)]">
-            Mehrere Ideen auf einmal? Trenn sie mit einer Zeile aus{" "}
-            <code className="rounded bg-[color:var(--surface-muted)] px-1.5 py-0.5 font-mono text-[11px]">
-              ---
-            </code>
-            . Bis zu 20 Stück, je 20.000 Zeichen. Sie werden parallel
-            analysiert.
-          </p>
-          <AudioRecorder textareaId="idea" />
-          {errorMessage ? (
-            <p className="rounded-lg border border-rose-300/60 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/50 dark:text-rose-300">
-              {errorMessage}
+            <span className="eyebrow">Für Gründer und Produktteams</span>
+            <h1 className="text-3xl font-bold tracking-tight text-[color:var(--foreground)] sm:text-5xl">
+              Geschäftsidee validieren, bevor du Monate baust
+            </h1>
+            <p className="max-w-2xl text-base text-[color:var(--foreground-muted)] sm:text-lg">
+              Füg deine Idee ein. Du bekommst einen strukturierten Bericht:
+              Marktgröße, Wettbewerber, Zielgruppe, Risiken und einen ersten
+              Umsetzungsplan. Kostenlos, ohne Anmeldung, in unter zwei Minuten.
             </p>
-          ) : null}
-          <div className="flex flex-wrap items-center gap-3 pt-1">
-            <button
-              type="submit"
-              className="brand-button inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold"
-            >
-              Idee absenden
+          </header>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            {[
+              {
+                title: "1. Idee einfügen",
+                body:
+                  "Ein Satz reicht, ein Absatz ist besser. Markdown, Skizze oder lose Notizen sind alle okay.",
+              },
+              {
+                title: "2. KI analysiert",
+                body:
+                  "Wir prüfen Markt, Wettbewerb, Zielgruppe und typische Stolperfallen und recherchieren dazu Quellen.",
+              },
+              {
+                title: "3. Bericht erhalten",
+                body:
+                  "Du bekommst eine Einschätzung, eine Risikoliste und einen ersten Umsetzungsplan.",
+              },
+            ].map((step) => (
+              <div key={step.title} className="surface-card p-5">
+                <div className="text-sm font-semibold text-[color:var(--brand-ink)]">
+                  {step.title}
+                </div>
+                <p className="mt-2 text-sm text-[color:var(--foreground-muted)]">
+                  {step.body}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="surface-card flex flex-col items-center gap-4 p-6 text-center sm:p-8">
+            <h2 className="text-xl font-semibold text-[color:var(--foreground)] sm:text-2xl">
+              Deine Idee jetzt validieren
+            </h2>
+            <p className="max-w-md text-sm text-[color:var(--foreground-muted)]">
+              Kostenlos und ohne Anmeldung. Jeder Bericht bekommt eine eigene
+              URL, zu der du jederzeit zurückkehren kannst.
+            </p>
+            <LandingCta className="brand-button inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold sm:text-base">
+              Idee einfügen und validieren
               <svg
                 aria-hidden
                 viewBox="0 0 24 24"
-                width="14"
-                height="14"
+                width="16"
+                height="16"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2.2"
@@ -142,24 +177,166 @@ export default async function Home({
                 <path d="M5 12h14" />
                 <path d="M13 5l7 7-7 7" />
               </svg>
-            </button>
-            <Link
-              href="/ideas"
-              className="text-sm font-medium text-[color:var(--brand-ink)] hover:underline"
-            >
-              Frühere Ideen anschauen
-            </Link>
+            </LandingCta>
+            <p className="text-xs text-[color:var(--foreground-muted)]">
+              Kein Account, keine Kreditkarte. Dauert 60 bis 90 Sekunden.
+            </p>
           </div>
-        </form>
+        </section>
 
-        <PreviousIdeasList />
+        <section className="flex flex-col gap-6">
+          <h2 className="text-2xl font-bold tracking-tight text-[color:var(--foreground)] sm:text-3xl">
+            Warum die meisten Geschäftsideen zu spät validiert werden
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="surface-card p-5">
+              <h3 className="text-base font-semibold text-[color:var(--foreground)]">
+                Das Problem
+              </h3>
+              <ul className="mt-3 space-y-2 text-sm text-[color:var(--foreground-muted)]">
+                <li>
+                  Recherche kostet Tage: Markt, Wettbewerber, Zielgruppe, Preis
+                  und Risiken, jeder Punkt einzeln.
+                </li>
+                <li>
+                  Am Ende entscheidet das Bauchgefühl, weil die strukturierte
+                  Analyse zu viel Aufwand kostet.
+                </li>
+                <li>
+                  Viele Ideen werden erst nach Monaten Aufbau verworfen, da ist
+                  die Zeit dann schon investiert.
+                </li>
+              </ul>
+            </div>
+            <div className="surface-card p-5">
+              <h3 className="text-base font-semibold text-[color:var(--foreground)]">
+                Was IDEAA anders macht
+              </h3>
+              <ul className="mt-3 space-y-2 text-sm text-[color:var(--foreground-muted)]">
+                <li>
+                  Strukturierter Bericht statt loser ChatGPT-Antworten:
+                  gleicher Rahmen für jede Idee.
+                </li>
+                <li>
+                  Quellen-Recherche zu Markt und Wettbewerb fließt direkt in
+                  die Einschätzung ein.
+                </li>
+                <li>
+                  Am Ende stehen konkrete nächste Schritte, kein
+                  Buzzword-Plan.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
 
-        <p className="text-center text-xs text-[color:var(--foreground-muted)]">
-          Kein Account nötig. Jede Idee bekommt eine eigene URL, die du
-          speichern oder weitergeben kannst.
-        </p>
+        <section className="flex flex-col gap-6">
+          <h2 className="text-2xl font-bold tracking-tight text-[color:var(--foreground)] sm:text-3xl">
+            Was im Validierungsbericht steht
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {[
+              {
+                title: "Markteinschätzung",
+                body:
+                  "Wie groß ist der adressierbare Markt? Wer kauft das, wer nicht, und warum?",
+              },
+              {
+                title: "Wettbewerbsumfeld",
+                body:
+                  "Wer ist schon im Markt? Wo ist die Lücke, und wo wäre ein direkter Angriff aussichtslos?",
+              },
+              {
+                title: "Zielgruppen-Hypothesen",
+                body:
+                  "Drei bis fünf konkrete Personas mit Bedürfnis, Auslöser und Zahlungsbereitschaft.",
+              },
+              {
+                title: "Risiken & Annahmen",
+                body:
+                  "Welche Annahmen müssen stimmen, damit die Idee trägt? Was würde sie zum Scheitern bringen?",
+              },
+              {
+                title: "Erster Umsetzungsplan",
+                body:
+                  "Konkrete nächste Schritte: Was zuerst testen, wie schnell, mit welchem Mindesteinsatz?",
+              },
+              {
+                title: "Eigene URL",
+                body:
+                  "Jeder Bericht bekommt eine eigene URL, die du mit Mitgründer:innen teilen oder für dich behalten kannst.",
+              },
+            ].map((item) => (
+              <div key={item.title} className="surface-card p-5">
+                <h3 className="text-base font-semibold text-[color:var(--foreground)]">
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-sm text-[color:var(--foreground-muted)]">
+                  {item.body}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
 
-        <LegalFooter />
+        <section className="flex flex-col gap-6">
+          <h2 className="text-2xl font-bold tracking-tight text-[color:var(--foreground)] sm:text-3xl">
+            Häufige Fragen
+          </h2>
+          <div className="flex flex-col gap-3">
+            {FAQ.map((item) => (
+              <details
+                key={item.q}
+                className="surface-card group p-5 [&_summary::-webkit-details-marker]:hidden"
+              >
+                <summary className="flex cursor-pointer items-center justify-between gap-4 text-base font-semibold text-[color:var(--foreground)]">
+                  {item.q}
+                  <span
+                    aria-hidden
+                    className="text-[color:var(--foreground-muted)] transition group-open:rotate-45"
+                  >
+                    +
+                  </span>
+                </summary>
+                <p className="mt-3 text-sm text-[color:var(--foreground-muted)]">
+                  {item.a}
+                </p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <section className="surface-card flex flex-col items-center gap-4 p-6 text-center sm:p-8">
+          <h2 className="text-xl font-semibold text-[color:var(--foreground)] sm:text-2xl">
+            Bereit, deine Geschäftsidee zu prüfen?
+          </h2>
+          <p className="max-w-md text-sm text-[color:var(--foreground-muted)]">
+            Kein Setup, kein Account nötig. Idee einfügen, und du bekommst
+            deinen Bericht.
+          </p>
+          <LandingCta className="brand-button inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold sm:text-base">
+            Jetzt Geschäftsidee validieren
+            <svg
+              aria-hidden
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M5 12h14" />
+              <path d="M13 5l7 7-7 7" />
+            </svg>
+          </LandingCta>
+        </section>
+
+        <footer className="flex flex-col items-center gap-3 pb-6 text-center text-xs text-[color:var(--foreground-muted)]">
+          <p>IDEAA: Idee einfügen, Validierungsbericht bekommen.</p>
+          <LegalFooter />
+        </footer>
       </div>
     </main>
   );

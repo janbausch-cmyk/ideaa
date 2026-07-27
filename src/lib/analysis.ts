@@ -3,7 +3,9 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 
 import { ANALYSIS_SYSTEM_PROMPT } from "./analysis-prompt";
+import { runCopyToolkitForIdea } from "./copy-toolkit";
 import {
+  markCopyToolkitRunning,
   saveAnalysisFailed,
   saveAnalysisReady,
   type IdeaRow,
@@ -153,6 +155,24 @@ export async function analyzeClaimedIdea(idea: IdeaRow): Promise<void> {
       report,
       finalTrace.length > 0 ? finalTrace : null,
     );
+
+    // Chain the Copy-Baukasten right after analysis. Errors are logged and
+    // persisted onto copy_toolkit_* columns, they do NOT roll back the
+    // analysis row (which is already 'done' and visible to the user).
+    // Vercel function budget note: worst-case analysis runs ~200s, this
+    // adds ~10–20s at Sonnet without web_search. If we ever bump against
+    // the 300s function lifetime, move this to a separate worker tick.
+    try {
+      const claimed = await markCopyToolkitRunning(idea.id);
+      if (claimed) {
+        await runCopyToolkitForIdea(claimed);
+      }
+    } catch (err) {
+      console.error(
+        `[analysis→copy-toolkit] id=${idea.id} chain failed`,
+        err,
+      );
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await saveAnalysisFailed(idea.id, message);

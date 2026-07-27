@@ -7,11 +7,13 @@ import remarkGfm from "remark-gfm";
 import AnalysisProgress from "@/components/AnalysisProgress";
 import BrandWordmark from "@/components/BrandWordmark";
 import CopyLinkButton from "@/components/CopyLinkButton";
+import CopyToolkit from "@/components/CopyToolkit";
 import FavoriteButton from "@/components/FavoriteButton";
 import IdeaStatusPoll from "@/components/IdeaStatusPoll";
 import LegalFooter from "@/components/LegalFooter";
 import IdeaTodoList from "@/components/IdeaTodoList";
 import PrintButton from "@/components/PrintButton";
+import RecommendationBanner from "@/components/RecommendationBanner";
 import RecordHistoryEntry from "@/components/RecordHistoryEntry";
 import RiskAssessment from "@/components/RiskAssessment";
 import { getIdea } from "@/lib/db";
@@ -109,11 +111,22 @@ export default async function IdeaPage({
   const submittedAtIso = submittedAtDate.toISOString();
   const isProcessing = status.tone === "processing";
   const isReady = status.tone === "ready";
+  const copyToolkitPending =
+    idea.copy_toolkit_status === "running" ||
+    idea.copy_toolkit_status === "idle";
+  // Keep polling as long as either pipeline is still in flight so the toolkit
+  // shows up automatically once the second LLM call chained after analysis
+  // finishes.
+  const shouldPoll = isProcessing || (isReady && copyToolkitPending);
 
   return (
     <main className="app-backdrop flex min-h-screen flex-col items-center px-6 py-12 sm:py-16 print:bg-white print:py-0">
-      {isProcessing ? (
-        <IdeaStatusPoll id={idea.id} initialStatus={idea.status} />
+      {shouldPoll ? (
+        <IdeaStatusPoll
+          id={idea.id}
+          initialStatus={idea.status}
+          initialCopyToolkitStatus={idea.copy_toolkit_status}
+        />
       ) : null}
       <RecordHistoryEntry
         id={idea.id}
@@ -220,6 +233,9 @@ export default async function IdeaPage({
               return (
                 <>
                   {riskAssessment ? (
+                    <RecommendationBanner data={riskAssessment} />
+                  ) : null}
+                  {riskAssessment ? (
                     <RiskAssessment data={riskAssessment} />
                   ) : null}
                   <section className="surface-card flex flex-col gap-3 p-6 sm:p-7">
@@ -242,6 +258,25 @@ export default async function IdeaPage({
                   ) : null}
                   {flowchart ? (
                     <IdeaTodoList data={flowchart} lang={lang} />
+                  ) : null}
+                  {idea.copy_toolkit_status === "done" &&
+                  idea.copy_toolkit_report ? (
+                    <CopyToolkit report={idea.copy_toolkit_report} />
+                  ) : idea.copy_toolkit_status === "running" ||
+                    idea.copy_toolkit_status === "idle" ? (
+                    <section
+                      className="copy-toolkit-status surface-card"
+                      aria-live="polite"
+                    >
+                      <span
+                        className="copy-toolkit-status__spinner"
+                        aria-hidden
+                      />
+                      <span>
+                        Copy-Baukasten wird generiert. Interview-Skript,
+                        Landing-Copy und Ads landen in ein paar Sekunden hier.
+                      </span>
+                    </section>
                   ) : null}
                 </>
               );

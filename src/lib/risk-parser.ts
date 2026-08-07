@@ -50,14 +50,16 @@ function findSection(markdown: string, patterns: RegExp[]): string | null {
   return null;
 }
 
-// Split §3 body into individual risk bullets. Each bullet starts with `- ` at
-// the beginning of a line (or `* `). We only split top-level bullets; nested
-// sub-bullets stay attached to their parent.
+// Split §3 body into individual risk items. Accepts both unordered bullets
+// (`- foo`, `* foo`) and ordered lists (`1. foo`, `2) foo`) — the prompt shows
+// `- ` examples but the model regularly emits numbered lists for §3, which
+// previously killed the whole risk widget silently (parser returned null →
+// neither the Kurzurteil-Banner nor the Tacho rendered).
 function splitBullets(body: string): string[] {
-  // Prepend a newline so the very first bullet matches the (^|\n) alt.
+  // Prepend a newline so the very first bullet matches the leading anchor.
   const normalized = "\n" + body;
+  const bulletRe = /\n(?:[\-*]|\d{1,2}[.)])\s+/g;
   const parts: string[] = [];
-  const bulletRe = /\n[\-*]\s+/g;
   const matches: number[] = [];
   let m: RegExpExecArray | null;
   while ((m = bulletRe.exec(normalized)) !== null) {
@@ -66,7 +68,12 @@ function splitBullets(body: string): string[] {
   for (let i = 0; i < matches.length; i++) {
     const start = matches[i];
     const end = i + 1 < matches.length ? matches[i + 1] : normalized.length;
-    parts.push(normalized.slice(start, end).replace(/^\n[\-*]\s+/, "").trim());
+    parts.push(
+      normalized
+        .slice(start, end)
+        .replace(/^\n(?:[\-*]|\d{1,2}[.)])\s+/, "")
+        .trim(),
+    );
   }
   return parts.filter((b) => b.length > 0);
 }

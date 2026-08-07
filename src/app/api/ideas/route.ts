@@ -61,6 +61,7 @@ export async function GET(request: Request) {
       updated_at: r.updated_at,
       analysis_started_at: r.analysis_started_at,
       analysis_finished_at: r.analysis_finished_at,
+      copy_toolkit_status: r.copy_toolkit_status,
       raw_text_preview: r.raw_text_preview,
     })),
   });

@@ -27,7 +27,7 @@ export function getSql(): NeonQueryFunction<false, false> {
 // The fast path in ensureSchema() trusts schema_version to decide whether to
 // run the slow path. If a later migration is needed, increment this number
 // AND add the new statements to applyAllMigrations().
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 async function checkSchemaVersionFast(
   sql: NeonQueryFunction<false, false>,
@@ -72,6 +72,16 @@ async function applyAllMigrations(
       await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS deepdive_input_tokens int`;
       await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS deepdive_output_tokens int`;
       await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS deepdive_model text`;
+      // Copy-Baukasten (Interview-Skript, Landing-Copy, Ad-Varianten,
+      // Waitlist, Cold-DM). Automatisch angehängt nach saveAnalysisReady.
+      await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS copy_toolkit_status text NOT NULL DEFAULT 'idle'`;
+      await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS copy_toolkit_report text`;
+      await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS copy_toolkit_started_at timestamptz`;
+      await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS copy_toolkit_finished_at timestamptz`;
+      await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS copy_toolkit_error text`;
+      await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS copy_toolkit_input_tokens int`;
+      await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS copy_toolkit_output_tokens int`;
+      await sql`ALTER TABLE ideas ADD COLUMN IF NOT EXISTS copy_toolkit_model text`;
       // Migrate legacy status names to the new vocabulary. Idempotent.
       await sql`UPDATE ideas SET status = 'done' WHERE status = 'ready'`;
       await sql`
@@ -238,6 +248,12 @@ export type ToolTraceEntry =
 
 export type DeepdiveStatus = "idle" | "queued" | "running" | "done" | "failed";
 
+export type CopyToolkitStatus =
+  | "idle"
+  | "running"
+  | "done"
+  | "failed";
+
 export type IdeaRow = {
   id: string;
   raw_text: string;
@@ -260,6 +276,14 @@ export type IdeaRow = {
   deepdive_input_tokens: number | null;
   deepdive_output_tokens: number | null;
   deepdive_model: string | null;
+  copy_toolkit_status: string;
+  copy_toolkit_report: string | null;
+  copy_toolkit_started_at: string | null;
+  copy_toolkit_finished_at: string | null;
+  copy_toolkit_error: string | null;
+  copy_toolkit_input_tokens: number | null;
+  copy_toolkit_output_tokens: number | null;
+  copy_toolkit_model: string | null;
 };
 
 const IDEA_COLUMNS = `
@@ -268,7 +292,10 @@ const IDEA_COLUMNS = `
   analysis_tool_trace, admin_note, tags,
   deepdive_status, deepdive_report, deepdive_started_at, deepdive_finished_at,
   deepdive_error, deepdive_tool_trace,
-  deepdive_input_tokens, deepdive_output_tokens, deepdive_model
+  deepdive_input_tokens, deepdive_output_tokens, deepdive_model,
+  copy_toolkit_status, copy_toolkit_report, copy_toolkit_started_at,
+  copy_toolkit_finished_at, copy_toolkit_error,
+  copy_toolkit_input_tokens, copy_toolkit_output_tokens, copy_toolkit_model
 `;
 
 export async function insertIdea(rawText: string): Promise<IdeaRow> {
@@ -446,6 +473,7 @@ export type IdeaStatusRow = {
   updated_at: string;
   analysis_started_at: string | null;
   analysis_finished_at: string | null;
+  copy_toolkit_status: string;
   raw_text_preview: string;
 };
 
@@ -461,6 +489,7 @@ export async function getIdeaStatuses(
   const rows = (await sql`
     SELECT id::text AS id, status, created_at, updated_at,
            analysis_started_at, analysis_finished_at,
+           copy_toolkit_status,
            substring(raw_text from 1 for ${PREVIEW_CHARS}) AS raw_text_preview
     FROM ideas
     WHERE id = ANY(${valid}::uuid[])
@@ -819,6 +848,76 @@ export async function saveDeepdiveFailed(
     SET deepdive_status = 'failed',
         deepdive_error = ${errorMessage},
         deepdive_finished_at = now(),
+        updated_at = now()
+    WHERE id = ${id}::uuid
+  `;
+}
+
+// --- Copy-Baukasten -----------------------------------------------------
+
+/**
+ * Mark the copy-toolkit as running. Idempotent: transitions from idle,
+ * done, or failed. Returns the updated row so the caller can pass it into
+ * runCopyToolkitForIdea, or null if the id is unknown / already running.
+ */
+export async function markCopyToolkitRunning(
+  id: string,
+): Promise<IdeaRow | null> {
+  if (!isValidIdeaId(id)) return null;
+  await ensureSchema();
+  const sql = getSql();
+  const rows = (await sql`
+    UPDATE ideas
+    SET copy_toolkit_status = 'running',
+        copy_toolkit_started_at = now(),
+        copy_toolkit_finished_at = NULL,
+        copy_toolkit_error = NULL,
+        updated_at = now()
+    WHERE id = ${id}::uuid
+      AND copy_toolkit_status IN ('idle', 'done', 'failed')
+    RETURNING ${sql.unsafe(IDEA_COLUMNS)}
+  `) as IdeaRow[];
+  return rows[0] ?? null;
+}
+
+export async function saveCopyToolkitReady(
+  id: string,
+  report: string,
+  usage: {
+    input_tokens: number | null;
+    output_tokens: number | null;
+    model: string | null;
+  },
+): Promise<void> {
+  if (!isValidIdeaId(id)) return;
+  await ensureSchema();
+  const sql = getSql();
+  await sql`
+    UPDATE ideas
+    SET copy_toolkit_status = 'done',
+        copy_toolkit_report = ${report},
+        copy_toolkit_error = NULL,
+        copy_toolkit_finished_at = now(),
+        copy_toolkit_input_tokens = ${usage.input_tokens},
+        copy_toolkit_output_tokens = ${usage.output_tokens},
+        copy_toolkit_model = ${usage.model},
+        updated_at = now()
+    WHERE id = ${id}::uuid
+  `;
+}
+
+export async function saveCopyToolkitFailed(
+  id: string,
+  errorMessage: string,
+): Promise<void> {
+  if (!isValidIdeaId(id)) return;
+  await ensureSchema();
+  const sql = getSql();
+  await sql`
+    UPDATE ideas
+    SET copy_toolkit_status = 'failed',
+        copy_toolkit_error = ${errorMessage},
+        copy_toolkit_finished_at = now(),
         updated_at = now()
     WHERE id = ${id}::uuid
   `;
